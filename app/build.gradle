@@ -41,12 +41,10 @@ dependencies {
 
     // [-] Import DroidHelper Lib --------------------------------------
     /**
-     * (1) As Module: implementation project(path: ':droidhelpers')
+     * (1) As Module: implementation project(':droidhelpers')
      * (2) As Dep: implementation 'com.github.rochdi-wafik:droidhelpers:1.0.0'
      */
-
-    implementation project(':droidhelpers')
-//    implementation 'com.github.rochdi-wafik:droidhelpers:1.0.0'
+    implementation 'com.github.rochdi-wafik:droidhelpers:1.0.0'
 
 
 
