@@ -25,7 +25,7 @@ android {
         targetCompatibility JavaVersion.VERSION_17
     }
 
-    /*
+
     // we'll publish the 'release' variant for libraries.
     publishing {
         singleVariant('release') {
@@ -34,7 +34,7 @@ android {
             withJavadocJar()
         }
     }
-    */
+
 
 }
 
@@ -96,13 +96,18 @@ afterEvaluate {
  */
 
 afterEvaluate {
-    android.libraryVariants.each {variant->
-        publishing.publications.create(variant.name, MavenPublication){
-            from components.findByName(variant.name)
+    publishing {
+        publications {
+            release(MavenPublication){
+                // module info
+                groupId = 'com.github.rochdi-wafik'   // use a preferred namespace
+                artifactId = 'droidhelpers'
+                version = '1.0.0'                   // we can change this per test
 
-            groupId = 'com.github.rochdi-wafik'
-            artifactId = 'droidhelpers'
-            version = '1.0.0'
+                // identify which component to publish, its usually `components.release`
+                // or we can specify our custom flavor release, like `components.dev`
+                from components.release
+            }
         }
     }
 }
