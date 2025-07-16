@@ -69,7 +69,7 @@ You can import this library into your project as a local module or via GitHub (J
 
 ### Option 1: Use ad dependency
 ```gradle
-implementation 'com.github.yourusername:android-utils:1.0.0'
+implementation 'com.github.rochdi-wafik:droidhelpers:v1.0.0'
 ```
 ### Option 2: Import as Module
 
@@ -78,7 +78,7 @@ implementation 'com.github.yourusername:android-utils:1.0.0'
 3. Add it as a dependency in `build.gradle`:
 
 ```gradle
-implementation project(":your_module_name")
+implementation project(":droidhelpers")
 ```
 
 ---
@@ -108,9 +108,9 @@ SqlPreferences.getInstance(anyContext)
 * Minimum SDK: API 21+ (Android 5)
 * Language: Java (compatible with Kotlin-based projects)
 
+[![](https://jitpack.io/v/rochdi-wafik/droidhelpers.svg)](https://jitpack.io/#rochdi-wafik/droidhelpers)
 
 --- 
 
 ## 📄 License
 MIT License – feel free to use, modify, and distribute with attribution.
-

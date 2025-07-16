@@ -69,7 +69,7 @@ You can import this library into your project as a local module or via GitHub (J
 
 ### Option 1: Use ad dependency
 ```gradle
-implementation 'com.github.yourusername:android-utils:1.0.0'
+implementation 'com.github.rochdi-wafik:droidhelpers:v1.0.0'
 ```
 ### Option 2: Import as Module
 
@@ -78,7 +78,7 @@ implementation 'com.github.yourusername:android-utils:1.0.0'
 3. Add it as a dependency in `build.gradle`:
 
 ```gradle
-implementation project(":your_module_name")
+implementation project(":droidhelpers")
 ```
 
 ---
