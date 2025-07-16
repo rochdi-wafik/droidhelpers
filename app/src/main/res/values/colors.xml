@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- System Colors -->
+    <color name="aqua_200">#37C275</color>
+    <color name="aqua_700">#25814E</color>
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+
+    <!-- Application Colors -->
+    <color name="primary_200">#0E1132</color>
+    <color name="primary_400">#090B20</color>
+    <color name="secondary_200">#3C982F</color>
+    <color name="secondary_400">#328826</color>
+    <color name="action_bar">@color/primary_200</color>
+    <color name="status_top">@color/primary_400</color>
+
+    <!-- Bootstrap Colors -->
+    <color name="bt_success">#28a745</color>
+    <color name="bt_orange">#FF9800</color>
+</resources>

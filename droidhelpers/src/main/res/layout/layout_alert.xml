@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/alertContainer"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@drawable/shape_alert_success"
+    android:baselineAligned="false"
+    android:orientation="horizontal">
+
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="1"
+        android:orientation="vertical"
+        android:padding="10dp">
+
+        <TextView
+            android:id="@+id/alertTitle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingBottom="5dp"
+            android:text="Well Done!"
+            android:textColor="@color/color_success"
+            android:textSize="@dimen/alert_text_title"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/alertContent"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="you successfully read this important alert message. This example text is going to run a bit longer"
+            android:textColor="#155724"
+            android:textSize="@dimen/alert_text_content" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/closeBtnContainer"
+        android:layout_width="wrap_content"
+        android:layout_height="match_parent"
+        android:orientation="vertical">
+
+        <ImageButton
+            android:id="@+id/closeBtn"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:adjustViewBounds="true"
+            android:backgroundTint="#00A61B1B"
+            android:src="@drawable/ic_close"
+            app:tint="#515151"
+            tools:ignore="SpeakableTextPresentCheck"
+            android:contentDescription="TODO" />
+    </LinearLayout>
+
+</LinearLayout>

@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Global -->
+    <color name="white">#FFFFFF</color>
+    <color name="black">#000000</color>
+    <!-- Alert Secondary -->
+    <color name="background_default">#50636B77</color>
+    <color name="border_default">#45636B77</color>
+    <color name="color_default">#EB666666</color>
+
+    <!-- Alert Primary -->
+    <color name="background_primary">#cce5ff</color>
+    <color name="border_primary">#b8daff</color>
+    <color name="color_primary">#004085</color>
+
+    <!-- Alert Secondary -->
+    <color name="background_secondary">#e2e3e5</color>
+    <color name="border_secondary">#d6d8db</color>
+    <color name="color_secondary">#383d41</color>
+
+    <!-- Alert Info -->
+    <color name="background_info">#d1ecf1</color>
+    <color name="border_info">#bee5eb</color>
+    <color name="color_info">#0c5460</color>
+
+    <!-- Alert Success -->
+    <color name="background_success">#d4edda</color>
+    <color name="border_success">#c3e6cb</color>
+    <color name="color_success">#155724</color>
+
+    <!-- Alert Warning -->
+    <color name="background_warning">#fff3cd</color>
+    <color name="border_warning">#ffeeba</color>
+    <color name="color_warning">#856404</color>
+
+    <!-- Alert Danger -->
+    <color name="background_danger">#f8d7da</color>
+    <color name="border_danger">#f5c6cb</color>
+    <color name="color_danger">#721c24</color>
+
+    <!-- Close Icon -->
+    <color name="icon_close">#D81B1B1B</color>
+
+</resources>

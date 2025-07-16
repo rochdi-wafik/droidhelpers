@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Alert Selector -->
+    <dimen name="alert_radius">5dp</dimen>
+
+    <!-- Alert Texts -->
+    <dimen name="alert_text_title">16sp</dimen>
+    <dimen name="alert_text_content">13sp</dimen>
+
+    <!-- Icon Close -->
+    <dimen name="icon_close_size">18dp</dimen>
+</resources>
