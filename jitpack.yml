@@ -1,0 +1,7 @@
+jdk:
+  - openjdk17
+
+android: true
+
+install:
+  - ./gradlew :droidhelpers:assembleRelease
