@@ -1,10 +1,8 @@
-package com.iorgana.droidhelpers_implements.app;
+package com.iorgana.droidhelpers_project.app;
 
 import android.app.Application;
 import android.content.Context;
 import android.content.SharedPreferences;
-import android.os.Handler;
-import android.os.Looper;
 
 import androidx.appcompat.app.AppCompatDelegate;
 

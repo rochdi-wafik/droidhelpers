@@ -1,4 +1,4 @@
-package com.iorgana.droidhelpers_implements.model;
+package com.iorgana.droidhelpers_project.model;
 
 import androidx.annotation.NonNull;
 

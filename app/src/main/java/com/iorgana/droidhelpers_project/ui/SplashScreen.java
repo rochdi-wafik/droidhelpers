@@ -1,16 +1,12 @@
-package com.iorgana.droidhelpers_implements.ui;
+package com.iorgana.droidhelpers_project.ui;
 
 import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.os.Bundle;
 
-import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.graphics.Insets;
-import androidx.core.view.ViewCompat;
-import androidx.core.view.WindowInsetsCompat;
 
-import com.iorgana.droidhelpers_implements.R;
+import com.iorgana.droidhelpers_project.R;
 
 @SuppressLint("CustomSplashScreen")
 public class SplashScreen extends AppCompatActivity {

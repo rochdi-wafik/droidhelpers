@@ -71,42 +71,17 @@ dependencies {
 // --- Maven Local Publish Script
 //  publish the module to local Maven repository (in .m2/repository).
 // That way, we can test it just like a real dependency. before upload it to live repo
-/*
-afterEvaluate {
-    publishing {
-        publications {
-            release(MavenPublication){
-                // module info
-                groupId = 'com.github.rochdi-wafik'   // use a preferred namespace
-                artifactId = 'droidhelpers'
-                version = '1.0.0'                   // we can change this per test
-
-                // identify which component to publish, its usually `components.release`
-                // or we can specify our custom flavor release, like `components.dev`
-                from components.release
-            }
-        }
-
-//        repositories {
-//            mavenLocal() // <--- 6. Predefined local Maven repository
-//        }
-    }
-}
-
- */
 
 afterEvaluate {
     publishing {
         publications {
-            release(MavenPublication){
-                // module info
-                groupId = 'com.github.rochdi-wafik'   // use a preferred namespace
-                artifactId = 'droidhelpers'
-                version = '1.0.0'                   // we can change this per test
-
-                // identify which component to publish, its usually `components.release`
-                // or we can specify our custom flavor release, like `components.dev`
+            maven(MavenPublication) {
+                // Publish release, Or components.debug if publishing debug build, or components.java for pure Java/Kotlin libs
                 from components.release
+
+                groupId = 'com.github.rochdi-wafik' // GitHub username
+                artifactId = 'droidhelpers'         // Module name
+                version = 'v1.0.0'                  // The version usually matching your Git tag
             }
         }
     }
