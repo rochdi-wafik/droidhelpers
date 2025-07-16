@@ -82,14 +82,14 @@ release(MavenPublication){
 [1] Using Terminal
 - Navigate to the  project's root directory in your terminal and run:
 ```bash
-./gradlew :droidhelpers:publishToMavenLocal
+./gradlew :myLib:publishToMavenLocal
 ```
 - This will create:
-  <project-root>/build/local-maven/com/yourdomain/droidhelpers/droidhelpers/1.0.0-local/...
+  <project-root>/build/local-maven/com/yourdomain/myLib/myLib/1.0.0-local/...
 
 [2] Using Gradle Tool Window
 1. Open the Gradle tool window (usually on the right side of Android Studio).
-2. Expand your_project_name > droidhelpers > Tasks > publishing.
+2. Expand your_project_name > myLib > Tasks > publishing.
 3. Double-click publishToMavenLocal.
 After running this task, an AAR file, POM file, sources JAR, and Javadoc JAR 
 will be placed in the local Maven repository.
@@ -110,7 +110,7 @@ dependencyResolutionManagement {
 ```groovy
 dependencies {
     // ... other dependencies
-    implementation 'com.domain:droidhelper:1.0.0' // <--- Your local dependency
+    implementation 'com.domain.myLib:1.0.0-local' // <--- Your local dependency
 } 
 ```
 

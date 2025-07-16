@@ -37,13 +37,14 @@ android {
 dependencies {
 
     // Logger ------------------------------------------------------------
-    implementation 'com.orhanobut:logger:2.2.0' // for debugging
+    implementation 'com.orhanobut:logger:2.2.0' // for logging
 
     // [-] Import DroidHelper Lib --------------------------------------
     /**
      * (1) As Module: implementation project(path: ':droidhelpers')
-     * (2) As Local Dep: implementation 'com.rochdi-wafik.droidhelpers:1.0.0-local'
+     * (2) As Dep: implementation 'com.github.rochdi-wafik:droidhelpers:1.0.0'
      */
+
     implementation project(path: ':droidhelpers')
 
 

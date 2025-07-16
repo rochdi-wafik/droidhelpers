@@ -73,9 +73,9 @@ afterEvaluate {
         publications {
             release(MavenPublication){
                 // module info
-                groupId = 'com.rochdi-wafik.droidhelpers'   // use a preferred namespace
+                groupId = 'com.github.rochdi-wafik'   // use a preferred namespace
                 artifactId = 'droidhelpers'
-                version = '1.0.0-local'                   // we can change this per test
+                version = '1.0.0'                   // we can change this per test
 
                 // identify which component to publish, its usually `components.release`
                 // or we can specify our custom flavor release, like `components.dev`
