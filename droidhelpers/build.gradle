@@ -25,6 +25,7 @@ android {
         targetCompatibility JavaVersion.VERSION_17
     }
 
+    /*
     // we'll publish the 'release' variant for libraries.
     publishing {
         singleVariant('release') {
@@ -33,6 +34,8 @@ android {
             withJavadocJar()
         }
     }
+    */
+
 }
 
 dependencies {
@@ -68,6 +71,7 @@ dependencies {
 // --- Maven Local Publish Script
 //  publish the module to local Maven repository (in .m2/repository).
 // That way, we can test it just like a real dependency. before upload it to live repo
+/*
 afterEvaluate {
     publishing {
         publications {
@@ -83,8 +87,22 @@ afterEvaluate {
             }
         }
 
-        repositories {
-            mavenLocal() // <--- 6. Predefined local Maven repository
+//        repositories {
+//            mavenLocal() // <--- 6. Predefined local Maven repository
+//        }
+    }
+}
+
+ */
+
+afterEvaluate {
+    android.libraryVariants.each {variant->
+        publishing.publications.create(variant.name, MavenPublication){
+            from components.findByName(variant.name)
+
+            groupId = 'com.github.rochdi-wafik'
+            artifactId = 'droidhelpers'
+            version = '1.0.0'
         }
     }
 }

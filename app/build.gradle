@@ -45,14 +45,15 @@ dependencies {
      * (2) As Dep: implementation 'com.github.rochdi-wafik:droidhelpers:1.0.0'
      */
 
-    implementation project(path: ':droidhelpers')
+    implementation project(':droidhelpers')
+
+
 
 
     // [-] Android dependencies ----------------------------------------------------
     implementation 'androidx.appcompat:appcompat:1.7.1'
     implementation 'com.google.android.material:material:1.12.0'
     implementation 'androidx.preference:preference:1.2.1'
-    implementation project(':droidhelpers')
     androidTestImplementation 'androidx.test.ext:junit:1.2.1'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.6.1'
 }

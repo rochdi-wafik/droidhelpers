@@ -12,8 +12,6 @@ dependencyResolutionManagement {
         mavenCentral()
         maven { url "https://jitpack.io" }
         maven { url "https://maven.google.com"}
-
-        mavenLocal() // remove on live
     }
 }
 
