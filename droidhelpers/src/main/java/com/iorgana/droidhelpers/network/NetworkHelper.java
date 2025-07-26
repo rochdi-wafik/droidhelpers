@@ -15,22 +15,10 @@ public class NetworkHelper {
         ConnectivityManager manager = (ConnectivityManager) context.getApplicationContext().getSystemService(Context.CONNECTIVITY_SERVICE);
 
         // Api Level 23+
-        if (Build.VERSION.SDK_INT >= 23) {
-            NetworkCapabilities capabilities = manager.getNetworkCapabilities(manager.getActiveNetwork());
-            if(capabilities!=null) {
-                if (capabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) || capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)) {
-                    isConnected = true;
-                }
-            }
-        }
-
-        // Api Older than 23
-        else {
-            NetworkInfo network = manager.getActiveNetworkInfo();
-            if(network!=null){
-                if(network.isConnected() && network.isAvailable()){
-                    isConnected = true;
-                }
+        NetworkCapabilities capabilities = manager.getNetworkCapabilities(manager.getActiveNetwork());
+        if(capabilities!=null) {
+            if (capabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) || capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)) {
+                isConnected = true;
             }
         }
 
