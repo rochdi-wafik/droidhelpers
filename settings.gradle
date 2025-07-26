@@ -15,6 +15,6 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "DroidHelpers_Project"
+rootProject.name = "DroidHelpers"
 include ':app'
 include ':droidhelpers'
