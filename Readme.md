@@ -105,7 +105,7 @@ SqlPreferences.getInstance(anyContext)
 ---
 
 ## 🔧 Compatibility
-* Minimum SDK: API 21+ (Android 5)
+* Minimum SDK: API 24
 * Language: Java (compatible with Kotlin-based projects)
 
 [![](https://jitpack.io/v/rochdi-wafik/droidhelpers.svg)](https://jitpack.io/#rochdi-wafik/droidhelpers)
