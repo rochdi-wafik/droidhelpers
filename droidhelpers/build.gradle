@@ -81,7 +81,7 @@ afterEvaluate {
 
                 groupId = 'com.github.rochdi-wafik' // GitHub username
                 artifactId = 'droidhelpers'         // Module name
-                version = 'v1.0.1'                  // The version usually matching your Git tag
+                version = 'v1.0.2'                  // The version usually matching your Git tag
             }
         }
     }
