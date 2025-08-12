@@ -90,8 +90,8 @@ afterEvaluate {
 //                url = uri("https://maven.pkg.github.com/${rootProject.ext.gprUser}/${rootProject.name}")
                 url = uri("https://maven.pkg.github.com/rochdi-wafik/droidhelpers")
                 credentials {
-                    username = gp_user
-                    password = gp_key
+                    username = "rochdi-wafik"
+                    password = "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"
                 }
             }
         }
