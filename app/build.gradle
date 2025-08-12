@@ -8,10 +8,10 @@ android {
 
     defaultConfig {
         applicationId "com.iorgana.droidhelpers_project"
-        minSdk 21
+        minSdk 24
         targetSdk 36
-        versionCode 1
-        versionName "1.0"
+        versionCode 2
+        versionName "1.1"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -44,7 +44,8 @@ dependencies {
      * (1) As Module: implementation project(':droidhelpers')
      * (2) As Dep: implementation 'com.github.rochdi-wafik:droidhelpers:1.0.0'
      */
-    implementation 'com.github.rochdi-wafik:droidhelpers:1.0.0'
+//    implementation project(':droidhelpers')
+    implementation 'com.github.rochdi-wafik:droidhelpers:1.0.3'
 
 
 
@@ -53,6 +54,6 @@ dependencies {
     implementation 'androidx.appcompat:appcompat:1.7.1'
     implementation 'com.google.android.material:material:1.12.0'
     implementation 'androidx.preference:preference:1.2.1'
-    androidTestImplementation 'androidx.test.ext:junit:1.2.1'
+    androidTestImplementation 'androidx.test.ext:junit:1.3.0'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.6.1'
 }
