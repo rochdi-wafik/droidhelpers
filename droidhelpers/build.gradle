@@ -87,12 +87,12 @@ afterEvaluate {
         repositories {
             maven {
                 name = "GitHubPackages"
-//                url = uri("https://maven.pkg.github.com/${rootProject.ext.gprUser}/${rootProject.name}")
                 url = uri("https://maven.pkg.github.com/rochdi-wafik/droidhelpers")
-                credentials {
-                    username = "rochdi-wafik"
-                    password = "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"
-                }
+                // uncomment during git push
+//                credentials {
+//                    username = "rochdi-wafik"
+//                    password = "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"
+//                }
             }
         }
     }
