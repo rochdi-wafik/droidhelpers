@@ -88,11 +88,7 @@ afterEvaluate {
             maven {
                 name = "GitHubPackages"
                 url = uri("https://maven.pkg.github.com/rochdi-wafik/droidhelpers")
-                // uncomment during git push
-//                credentials {
-//                    username = "rochdi-wafik"
-//                    password = "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"
-//                }
+
             }
         }
     }
