@@ -1,5 +1,3 @@
-// Last Update: 24-08-2024
-
 package com.iorgana.droidhelpers.crypto;
 
 import android.util.Base64;
@@ -7,20 +5,26 @@ import android.util.Log;
 
 import com.orhanobut.logger.Logger;
 
-import java.io.UnsupportedEncodingException;
 import java.nio.charset.StandardCharsets;
-import java.security.InvalidAlgorithmParameterException;
-import java.security.InvalidKeyException;
-import java.security.NoSuchAlgorithmException;
 
-import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
-import javax.crypto.IllegalBlockSizeException;
-import javax.crypto.NoSuchPaddingException;
+
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 
+import java.security.KeyFactory;
+import java.security.PublicKey;
+import java.security.Signature;
+import java.security.spec.X509EncodedKeySpec;
 
+
+/**
+ * ************************************************************************
+ * StringCrypto
+ * ************************************************************************
+ * - Methods for encryption and decryption
+ * // TODO: 7/24/2026 Maybe we need to change the class name?
+ */
 public class StringCrypto {
     private static final String TAG = "__StringCrypto";
     public static final String CIPHER_TRANS = "AES/CBC/PKCS5Padding";
@@ -202,5 +206,36 @@ public class StringCrypto {
         }
 
         return output.toString();
+    }
+
+    // Added on 24-07-2026
+
+    /**
+     * ****************************************************************
+     * Verify RSA Signature
+     * ****************************************************************
+     * - This replace HMAC verification with RSA signature verification for better security.
+     * - This method verifies the RSA signature of the given data using the provided public key.
+     */
+    public static boolean verifyRSASignature(byte[] rawResponseData, String signatureBase64, String publicKeyBase64) {
+        try {
+            byte[] keyBytes = Base64.decode(publicKeyBase64, Base64.NO_WRAP);
+            X509EncodedKeySpec spec = new X509EncodedKeySpec(keyBytes);
+            PublicKey publicKey = KeyFactory.getInstance("RSA").generatePublic(spec);
+
+            Signature sig = Signature.getInstance("SHA256withRSA");
+            sig.initVerify(publicKey);
+            sig.update(rawResponseData);
+
+            byte[] signatureBytes = Base64.decode(signatureBase64, Base64.NO_WRAP);
+            boolean isValid =  sig.verify(signatureBytes);
+            Logger.i(TAG+" verifyRSASignature(): isValid="+isValid);
+            return isValid;
+        } catch (Exception e) {
+            // fail closed, any exception means "don't trust this"
+            Logger.e(TAG+" verifyRSASignature(): Exception, "+e.getMessage());
+
+            return false;
+        }
     }
 }
