@@ -4,7 +4,7 @@ plugins {
 
 android {
     namespace 'com.iorgana.droidhelpers_project'
-    compileSdk 37
+    compileSdk 36
 
     defaultConfig {
         applicationId "com.iorgana.droidhelpers_project"

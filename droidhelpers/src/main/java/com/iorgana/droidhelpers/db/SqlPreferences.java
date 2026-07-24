@@ -12,7 +12,8 @@ import androidx.annotation.Nullable;
 
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
-import com.iorgana.droidhelpers.crypto.StringCrypto;
+import com.iorgana.droidhelpers.crypto.CryptoUtil;
+import com.iorgana.droidhelpers.utils.Utils;
 import com.orhanobut.logger.Logger;
 
 import java.io.ByteArrayInputStream;
@@ -182,8 +183,9 @@ public class SqlPreferences extends SQLiteOpenHelper {
      * - Therefore, It's recommended to keep encryption enabled. IF you want to
      *   disable it, make sure to edit it before this class initialized,
      *   usually in application->onCreate() or any app startup point
+     * @implNote Hardcoded Key not problem because this Lib is static, no remote config
      */
-    public static final String SECRET_KEY = "Ser5@3h6K#t5?f&58";
+    public static String SECRET_KEY = "Ser5@3h6K#t5?f&58";
     public static final boolean ENABLE_ENCRYPTION = true;
 
     /**
@@ -196,7 +198,7 @@ public class SqlPreferences extends SQLiteOpenHelper {
     private final ConcurrentHashMap<String, Object> tempMap = new ConcurrentHashMap<>();
 
     /**
-     * Callback
+     * ICallback
      * -------------------------------------------------------------------------
      * - This callback used to notify us when data is loaded to the cache
      * - This callback used when we want to load data in background when app started.
@@ -336,6 +338,29 @@ public class SqlPreferences extends SQLiteOpenHelper {
             cache.putAll(this.getAll());
             // Logger.d(TAG + " initSync(): Data has been loaded");
         }
+    }
+
+    /**
+     * ---------------------------------------------------------------------------------
+     * Set Secret Key
+     * ---------------------------------------------------------------------------------
+     * - Override default secret key, if you want to use your own key
+     * - Secret Key must be 16, 24, or 32 bytes long (128, 192, or 256 bits)
+     */
+    public void setSecretKey(String secretKey) {
+       // Check if secret key is valid length
+        if(secretKey.length()!=16 && secretKey.length()!=24 && secretKey.length()!=32){
+            String err = "Secret Key must be 16, 24, or 32 bytes long (128, 192, or 256 bits)";
+            Logger.e(TAG+" setSecretKey(): "+err);
+            if(Utils.isDebuggingMode(context)){
+                throw new IllegalArgumentException(err);
+            }
+            // IF production, just use the default key
+
+        }else{
+            SECRET_KEY = secretKey;
+        }
+
     }
 
     /**
@@ -854,7 +879,7 @@ public class SqlPreferences extends SQLiteOpenHelper {
                         cv.put(COLUMN_DATA_TYPE, data.getValue().getClass().getSimpleName());
                         // Put value (Check if encryption needed)
                         String original_val = String.valueOf(data.getValue());
-                        String final_val = (ENABLE_ENCRYPTION) ? StringCrypto.cipherEncrypt(original_val, SECRET_KEY) : original_val;
+                        String final_val = (ENABLE_ENCRYPTION) ? CryptoUtil.cipherEncrypt(original_val, SECRET_KEY) : original_val;
                         cv.put(COLUMN_DATA_VALUE, final_val);
                         // Add to Database
                         //// Logger.d(TAG + " insertMap(): Insert map: " + cv.toString());
@@ -896,7 +921,7 @@ public class SqlPreferences extends SQLiteOpenHelper {
 
             while (cursor.moveToNext()) {
                 String key = cursor.getString(0);
-                String columnResult = (ENABLE_ENCRYPTION) ? StringCrypto.cipherDecrypt(cursor.getString(1), SECRET_KEY) : cursor.getString(1);
+                String columnResult = (ENABLE_ENCRYPTION) ? CryptoUtil.cipherDecrypt(cursor.getString(1), SECRET_KEY) : cursor.getString(1);
                 String type = cursor.getString(2);
 
                 // Convert object type from string to its original

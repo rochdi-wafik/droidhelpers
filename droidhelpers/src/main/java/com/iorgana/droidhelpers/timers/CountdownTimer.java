@@ -1,6 +1,16 @@
 package com.iorgana.droidhelpers.timers;
 
 
+/**
+ * Countdown Timer
+ * -------------------------------------------------------------------------------
+ * - This timer counts down from a specified number of seconds to zero.
+ * - It supports pausing, resuming, delaying, and ending the countdown.
+ * - It notifies listeners of changes in the current second, state changes, and completion.
+ * -------------------------------------------------------------------------------
+ * @apiNote Warning: Listener all invoked in background thread, Make sure to switch
+ *         to main thread if you want to update UI.
+ */
 public class CountdownTimer {
 
     public interface TimerListener {
@@ -38,6 +48,12 @@ public class CountdownTimer {
         return currentSeconds;
     }
 
+    /**
+     * Start the countdown timer.
+     * ------------------------------------------------------
+     * @apiNote Warning: Listener all invoked in background thread, Make sure to switch
+     *          to main thread if you want to update UI.
+     */
     public void start() {
         if (state == State.RUNNING) return;
         stopFlag = false;

@@ -66,8 +66,6 @@ public class SimpleDB {
      * - You can set these fields statically before initialize this class
      */
     public static boolean enableEncryption = true;
-    public static final String SECRET_KEY = "Ser85630Klt20876"; // 128bit key
-
 
 
     /**
@@ -89,6 +87,9 @@ public class SimpleDB {
      * Get Shared Preferences
      * -------------------------------------------------------------------------
      * - Get normal shared preferences or encrypted if encryption is enabled
+     * @// TODO: 7/24/2026 'androidx.security.crypto.MasterKey' is deprecated
+     * @// TODO: 7/24/2026 Use Harmony EncryptedSharedPreferences when deprecation solved
+     *           Because Harmony also has that deprecated issue.
      */
     private SharedPreferences getSharedPreferences(Context context){
         if(!enableEncryption){

@@ -4,20 +4,22 @@ import android.content.Context;
 import android.net.ConnectivityManager;
 import android.net.Network;
 import android.net.NetworkCapabilities;
-import android.net.NetworkInfo;
-import android.os.Build;
 
-public class NetworkHelper {
+public class ConnectivityUtils {
+
+
     /**
-     * Is Device Connected to a network (CELLULAR - WIFI - VPN - ETHERNET)
+     * ******************************************************************
+     * Is Network Connected
+     * ******************************************************************
+     * - Is device connected to network regardless of whether that connection
+     *   actually has internet access or not.
+     * - Checks on (CELLULAR - WIFI - VPN - ETHERNET)
      */
     public static boolean isConnected(Context context) {
-        ConnectivityManager manager = (ConnectivityManager) context.getApplicationContext()
-                .getSystemService(Context.CONNECTIVITY_SERVICE);
+        ConnectivityManager manager = (ConnectivityManager) context.getApplicationContext().getSystemService(Context.CONNECTIVITY_SERVICE);
 
-        if (manager == null) {
-            return false;
-        }
+        if (manager == null) return false;
 
         Network activeNetwork = manager.getActiveNetwork();
         if (activeNetwork == null) {
@@ -37,7 +39,9 @@ public class NetworkHelper {
     }
 
     /**
+     * ******************************************************************
      * Is Device Has Internet Connection
+     * ******************************************************************
      */
     public static boolean hasInternet(Context context){
         ConnectivityManager manager = (ConnectivityManager) context.getApplicationContext()
@@ -57,7 +61,9 @@ public class NetworkHelper {
             return false;
         }
 
-        // Check if has capabilities for INTERNET
-        return capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET);
+        // NET_CAPABILITY_INTERNET: The network is set up to reach the internet.
+        // NET_CAPABILITY_VALIDATED: The system successfully verified actual internet connectivity.
+        return capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) &&
+                capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED);
     }
 }

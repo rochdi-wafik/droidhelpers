@@ -7,16 +7,14 @@ import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.Context;
-import android.os.Build;
 
 import androidx.annotation.Nullable;
-import androidx.annotation.RequiresApi;
 import androidx.core.app.NotificationCompat;
+import androidx.core.app.NotificationManagerCompat;
 
 import com.iorgana.droidhelpers.R;
 
 import java.util.Random;
-
 /**
  * Notification Maker
  * -----------------------------------------------------------------------------
@@ -25,6 +23,9 @@ import java.util.Random;
  * [Shared Notification]
  * - Use getInstance() to make single shared notification
  * - This can be used to share a single notification between multiple services
+ * -------------------------------------------------------------------------------
+ * @apiNote Runtime Permissions:  android.permission.POST_NOTIFICATIONS (for Android 13 and above)
+ * - show() will silently no-op if permission isn't granted.
  */
 public class NotificationMaker {
     private static final String TAG = "__SharedNotification";
@@ -54,20 +55,15 @@ public class NotificationMaker {
     private Boolean onGoing;
     private Boolean alertOnce;
 
-
-
     /**
      * Constructor (Single)
      * ----------------------------------------------------------------
      * - Use this constructor to make single unique notification
      */
-    public NotificationMaker(Context context){
-        this.context = (Application) context.getApplicationContext();        this.notificationID = new Random().nextInt();
+    public NotificationMaker(Context context) {
+        this.context = (Application) context.getApplicationContext();
         this.notificationID = new Random().nextInt();
     }
-
-
-
 
     /**
      * Get Instance (Shared)
@@ -75,9 +71,9 @@ public class NotificationMaker {
      * - Use this method to create shared notification (singleton)
      */
     public static NotificationMaker getInstance(Context context) {
-        if(INSTANCE==null){
-            synchronized (NotificationMaker.class){
-                if(INSTANCE==null){
+        if (INSTANCE == null) {
+            synchronized (NotificationMaker.class) {
+                if (INSTANCE == null) {
                     INSTANCE = new NotificationMaker(context);
                 }
             }
@@ -85,23 +81,27 @@ public class NotificationMaker {
         return INSTANCE;
     }
 
+    /**
+     * Helper to check if notifications are enabled for the app.
+     * ----------------------------------------------------------------
+     * - Useful for checking runtime permission status on Android 13 (API 33) and above.
+     *
+     * @return true if notifications are enabled, false otherwise.
+     */
+    public boolean areNotificationsEnabled() {
+        return NotificationManagerCompat.from(context).areNotificationsEnabled();
+    }
 
     /**
      * Get Notification
      * ----------------------------------------------------------------
      */
-    public Notification create(){
+    public Notification create() {
         // Create Notification Channel
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O){
-            this.notificationChannel = createNotificationChannel();
-        }
+        this.notificationChannel = createNotificationChannel();
         // Create Notification manager
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            this.notificationManager = context.getSystemService(NotificationManager.class);
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                this.notificationManager.createNotificationChannel(notificationChannel);
-            }
-        }
+        this.notificationManager = context.getSystemService(NotificationManager.class);
+        this.notificationManager.createNotificationChannel(notificationChannel);
 
         // Build Notification
         this.notificationBuilder = new NotificationCompat.Builder(context, CHANNEL_ID)
@@ -113,10 +113,10 @@ public class NotificationMaker {
                 .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
                 .setPriority(NotificationCompat.PRIORITY_DEFAULT);
 
-        if(this.alertOnce !=null){
+        if (this.alertOnce != null) {
             notificationBuilder.setOnlyAlertOnce(alertOnce);
         }
-        if(this.onGoing !=null){
+        if (this.onGoing != null) {
             notificationBuilder.setOngoing(onGoing);
         }
         if (this.actionPendingIntent != null) {
@@ -132,9 +132,8 @@ public class NotificationMaker {
         return notification;
     }
 
-    @RequiresApi(api = Build.VERSION_CODES.O)
-    private NotificationChannel createNotificationChannel(){
-        NotificationChannel channel = new NotificationChannel( CHANNEL_ID, title, NotificationManager.IMPORTANCE_DEFAULT);
+    private NotificationChannel createNotificationChannel() {
+        NotificationChannel channel = new NotificationChannel(CHANNEL_ID, title, NotificationManager.IMPORTANCE_DEFAULT);
         channel.setDescription(content);
         channel.setImportance(NotificationManager.IMPORTANCE_DEFAULT);
         return channel;
@@ -144,30 +143,35 @@ public class NotificationMaker {
      * Show Notification
      * -----------------------------------------------------------------------
      */
-    public void show(){
-        if(notification==null){
+    public void show() {
+        // Silently no-op if permission isn't granted
+        if (!areNotificationsEnabled()) {
+            return;
+        }
+        if (notification == null) {
             create();
         }
-        if(notification!=null && notificationManager!=null){
+        if (notification != null && notificationManager != null) {
             notificationManager.notify(notificationID, notification);
         }
     }
-    public void display(){ show();}
+
+    public void display() {
+        show();
+    }
 
     /**
      * Update Notification
      * -----------------------------------------------------------------------
      */
-    public void updateNotification(@Nullable String mTitle, @Nullable String mContent, @Nullable Integer mResIcon){
-        if(mTitle!=null) this.title = mTitle;
-        if(mContent!=null) this.content = mContent;
-        if(mResIcon!=null) this.resIcon = mResIcon;
+    public void updateNotification(@Nullable String mTitle, @Nullable String mContent, @Nullable Integer mResIcon) {
+        if (mTitle != null) this.title = mTitle;
+        if (mContent != null) this.content = mContent;
+        if (mResIcon != null) this.resIcon = mResIcon;
 
-        if(notificationBuilder==null) create();
+        if (notificationBuilder == null) create();
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            notificationChannel.enableVibration(false);
-        }
+        notificationChannel.enableVibration(false);
 
         notificationBuilder.setOnlyAlertOnce(true); // don't re-alert
         notificationBuilder.setContentTitle(this.title);
@@ -177,13 +181,12 @@ public class NotificationMaker {
         notificationManager.notify(notificationID, notificationBuilder.build());
     }
 
-
     /**
      * Remove Notification
      * -----------------------------------------------------------------------
      */
-    public void cancelNotification(){
-        if(notificationManager!=null) {
+    public void cancelNotification() {
+        if (notificationManager != null) {
             notificationManager.cancel(notificationID);
         }
     }
@@ -245,7 +248,6 @@ public class NotificationMaker {
         return notificationBuilder;
     }
 
-
     public NotificationChannel getNotificationChannel() {
         return notificationChannel;
     }
@@ -253,6 +255,7 @@ public class NotificationMaker {
     public NotificationManager getNotificationManager() {
         return notificationManager;
     }
+
     public Notification getNotification() {
         return notification;
     }
