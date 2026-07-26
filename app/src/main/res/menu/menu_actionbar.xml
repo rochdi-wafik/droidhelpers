@@ -1,0 +1,16 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:context="com.iorgana.droidhelpers_project.ui.MainActivity">
+    <item
+        android:id="@+id/nav_about_us"
+        android:title="About Us"
+        android:icon="@drawable/ic_info"
+        app:showAsAction="ifRoom"
+        />
+
+    <item
+        android:id="@+id/nav_exit"
+        android:title="Exit"
+        />
+</menu>

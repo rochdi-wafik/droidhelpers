@@ -21,34 +21,18 @@ import java.util.Objects;
 
 
 /**
+ * ************************************************************************
  * SimpleDB
- * ---------------------------------------------------------------------------
- * This class used to save/retrieve Object or List of Object (Serializable)
- * This class not used to save/retrieve abstract ui classes like Drawable
- * +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
- * - We use Gson to Serialize/Deserialize objects from/to String
- * - We use SharedPreferences to Save/Get Serialized Classes
- * +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
- * [OBJ_KEY]
- * - OBJ_KEY is used to identify the object we want to save/ retrieve
- * - If the user didn't specify OBJ_KEY, the className will be used as OBJ_KEY
- *  +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
- * [List]
- * - To prevent conflict between Object and List of the same Object,
- *   We added a prefix to object and prefix to List of Object
- * - Example: Suppose we have this Object:
- * > class User{static String OBJ_KEY = "OBJ_KEY_user"; //other fields}
- * - We'll use OBJ_KEY as key to save the object,
- * - But if we want to save a List of Object: List<User> then what?
- *   Then both User & List<User> share the same OBJ_KEY "OBJ_KEY_user" !!
- * - So that we have to add prefix for single Object and prefix for List
- *  +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
- *  [Security]
- * - Although SharedPreferences is not public/visible to users
- * - But its still accessible by Rooted devices
- * - By-default: the encryption is enabled, but it can be disabled statically
- *   before initialize the class by using: SimpleDB__Original.enableEncryption=false
- *   (In application class or any start point)
+ * ************************************************************************
+ * - Save and retrieve serializable objects or lists of objects using
+ *   SharedPreferences and Gson for serialization.
+ * - Uses prefixes (PREFIX_OBJ, PREFIX_LIST) to prevent key conflicts
+ *   between single objects and lists of the same type.
+ * - Encryption is enabled by default but can be disabled statically
+ *   before initialization (SimpleDB.enableEncryption = false).
+ * ------------------------------------------------------------------------
+ * @apiNote SharedPreferences are accessible on rooted devices even if
+ *          not publicly visible. Encryption is recommended.
  */
 public class SimpleDB {
     private static final String TAG = "__SimpleDB__Original";
@@ -63,16 +47,19 @@ public class SimpleDB {
     /**
      * Security
      * ------------------------------------------------------------------------
-     * - You can set these fields statically before initialize this class
+     * - Set this field statically before initializing this class to disable
+     *   encryption.
      */
     public static boolean enableEncryption = true;
 
 
     /**
-     * -------------------------------------------------------------------------
-     * Constructor
-     * -------------------------------------------------------------------------
-     * @param anyContext use any context
+     * ************************************************************************
+     * SimpleDB (Constructor)
+     * ************************************************************************
+     * - Create a new SimpleDB instance.
+     * ------------------------------------------------------------------------
+     * @param anyContext Any valid context.
      */
     public SimpleDB(Context anyContext){
         try{
@@ -83,13 +70,15 @@ public class SimpleDB {
     }
 
     /**
-     * -------------------------------------------------------------------------
-     * Get Shared Preferences
-     * -------------------------------------------------------------------------
-     * - Get normal shared preferences or encrypted if encryption is enabled
-     * @// TODO: 7/24/2026 'androidx.security.crypto.MasterKey' is deprecated
-     * @// TODO: 7/24/2026 Use Harmony EncryptedSharedPreferences when deprecation solved
-     *           Because Harmony also has that deprecated issue.
+     * ************************************************************************
+     * getSharedPreferences()
+     * ************************************************************************
+     * - Get normal or encrypted SharedPreferences based on enableEncryption.
+     * ------------------------------------------------------------------------
+     * @param context Any valid context.
+     * @return The SharedPreferences instance.
+     * @todo 'androidx.security.crypto.MasterKey' is deprecated.
+     * @todo Use Harmony EncryptedSharedPreferences when deprecation is resolved.
      */
     private SharedPreferences getSharedPreferences(Context context){
         if(!enableEncryption){
@@ -120,11 +109,13 @@ public class SimpleDB {
 
 
     /**
-     * -------------------------------------------------------------------------
-     *  Get Instance
-     * -------------------------------------------------------------------------
-     * - Get singleton instance
-     * @param anyContext use any context
+     * ************************************************************************
+     * getInstance()
+     * ************************************************************************
+     * - Get the singleton instance of SimpleDB.
+     * ------------------------------------------------------------------------
+     * @param anyContext Any valid context.
+     * @return The singleton SimpleDB instance.
      */
     public static SimpleDB getInstance(Context anyContext){
         if(INSTANCE==null){
@@ -138,11 +129,14 @@ public class SimpleDB {
     }
 
     /**
-     * -------------------------------------------------------------------------
-     *  Allow Save Null
-     * -------------------------------------------------------------------------
-     * - Allow save null value, we may try to save object that has null value
-     * - IF data saved with null, means the object value will be cleaned.
+     * ************************************************************************
+     * setAllowSaveNull()
+     * ************************************************************************
+     * - Allow or disallow saving null values.
+     * - If null is saved, the object value will be cleared.
+     * ------------------------------------------------------------------------
+     * @param allowSaveNull true to allow saving null values.
+     * @return This SimpleDB instance for chaining.
      */
     public SimpleDB setAllowSaveNull(boolean allowSaveNull) {
         this.allowSaveNull = allowSaveNull;
@@ -152,10 +146,13 @@ public class SimpleDB {
 
 
     /**
-     * -------------------------------------------------------------------------
-     * Save an Object
-     * -------------------------------------------------------------------------
-     * @param object: Generic type: can pass any serializable type
+     * ************************************************************************
+     * saveObject()
+     * ************************************************************************
+     * - Save a single object by key using Gson serialization.
+     * ------------------------------------------------------------------------
+     * @param key    The key to identify the object.
+     * @param object The object to save (any serializable type).
      */
     public <T> void saveObject(String key, T object){
         Logger.d(TAG + " saveObject(): "+key);
@@ -183,10 +180,13 @@ public class SimpleDB {
 
 
     /**
-     * Save a List of Object
-     * --------------------------------------------------------------------
-     * @param listObject: object
-     *
+     * ************************************************************************
+     * saveListObject()
+     * ************************************************************************
+     * - Save a list of objects by key using Gson serialization.
+     * ------------------------------------------------------------------------
+     * @param key        The key to identify the list.
+     * @param listObject The list of objects to save.
      */
     public <T> void saveListObject(String key, List<T> listObject){
         if(sharedPreferences==null) return;
@@ -209,10 +209,14 @@ public class SimpleDB {
     }
 
     /**
-     * Get Object
-     * --------------------------------------------------------------------
-     * @param classType: Object Type
-     * @return object:
+     * ************************************************************************
+     * getObject()
+     * ************************************************************************
+     * - Retrieve a saved object by key and deserialize it to the specified type.
+     * ------------------------------------------------------------------------
+     * @param key       The key identifying the object.
+     * @param classType The class type to deserialize to.
+     * @return The deserialized object, or null if not found.
      */
     public <T> @Nullable T getObject(String key, Class<T> classType){
         Logger.d(TAG+" getObject(): "+key);
@@ -236,6 +240,16 @@ public class SimpleDB {
     }
 
 
+    /**
+     * ************************************************************************
+     * getListObject()
+     * ************************************************************************
+     * - Retrieve a saved list of objects by key.
+     * ------------------------------------------------------------------------
+     * @param key    The key identifying the list.
+     * @param mClass The class type of the list elements.
+     * @return The deserialized list, or null if not found.
+     */
     public <T> @Nullable List<T> getListObject(String key, Class<T> mClass){
         Logger.d(TAG+" getListObject(): "+key);
         if(sharedPreferences==null) return null;
@@ -260,10 +274,12 @@ public class SimpleDB {
 
 
     /**
-     * Remove Object
-     * ----------------------------------------------------------------
-     * [-] Use the key to reach the specified object
-     * [-] Edit SharedPreferences, Remove the object by that Key
+     * ************************************************************************
+     * removeObject()
+     * ************************************************************************
+     * - Remove a saved object by its key.
+     * ------------------------------------------------------------------------
+     * @param key The key identifying the object to remove.
      */
     public void removeObject(String key){
         Logger.d(TAG + " removeObject(): key="+key);
@@ -280,9 +296,10 @@ public class SimpleDB {
 
 
     /**
-     * --------------------------------------------------------------------
-     * Clear All data
-     * --------------------------------------------------------------------
+     * ************************************************************************
+     * clear()
+     * ************************************************************************
+     * - Clear all saved data from SharedPreferences.
      */
     public void clear(){
         if(sharedPreferences==null) return;
@@ -291,11 +308,13 @@ public class SimpleDB {
     }
 
     /**
-     * Get UI Thread
-     * -------------------------------------------------------------------
-     * - We cannot edit or save in background thread
-     * - user may forgot to call simpleDB in ui thread
-     * - We can use this method to get UI Thread to use it to edit prefs
+     * ************************************************************************
+     * mainThread()
+     * ************************************************************************
+     * - Execute runnable(s) on the main (UI) thread.
+     * - SharedPreferences edits must be done on the UI thread.
+     * ------------------------------------------------------------------------
+     * @param runnable The runnable tasks to execute on the main thread.
      */
     private void mainThread(Runnable... runnable){
         Handler handler = new Handler(Looper.getMainLooper());

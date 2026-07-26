@@ -29,103 +29,34 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
- * ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
- *          Sql Preferences
- * ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
- * - SqlPreferences is an SQLite wrapper used to store, get, and manage data.
- * - SqlPreferences acts like SharedPreferences but uses SQL instead of XML.
- * - SqlPreferences uses caching, which gives you speed and flexibility.
+ * ************************************************************************
+ * SqlPreferences
+ * ************************************************************************
+ * - SQLite wrapper for storing, retrieving, and managing key-value data.
+ * - Acts like SharedPreferences but uses SQL instead of XML.
+ * - Uses in-memory caching for speed and UI-thread compatibility.
  *
- * --------------------------------------------------------------------------------
- *  Caching:
- * --------------------------------------------------------------------------------
- * - Normally, SQLite database performs I/O operations to write and read from disk.
- *   These I/O operations may take longer time and must be done in separate thread(s),
- *   because if we perform I/O on the main thread, it may block or freeze the application.
- * - If the user wants to save data and get it immediately, they can't, because the data may
- *   still be written in the background to the disk.
- * - Usually, the user may need to pass a callback listener to get notified when
- *   data is saved or fetched. But as we said, we may want to save and get data immediately
- *   without worrying about concurrency (since I/O is executed in the background).
- * - So, we need a way to save and get updated data even if it’s not written yet. This
- *   can be implemented using a caching system.
- * - Caching: instead of saving data directly to disk, we keep the data in memory
- *   (RAM), and then write it in a background task.
- *   So when the user performs a save action, they can immediately retrieve it from cache even
- *   if it hasn't been saved yet to disk (SQLite DB).
- * - In this way, the user can save and get data immediately using the UI/main thread.
- * - When the app is opened, the wrapper will load the data from disk to the cache, so that
- *   it will be available in the main thread when the user needs it.
+ * [Caching]
+ * - Data is kept in memory (RAM) and written to disk in the background.
+ * - This allows immediate retrieval after save, even before disk write
+ *   completes.
+ * - Call SqlPreferences.init() at app start to preload cache in the
+ *   background.
  *
- * - To load data to cache when the app starts, SqlPreferences.init() is used.
- * - init() must be called before anything, usually in Application->onCreate().
- * - Once init() is called, it will load the data to cache in a background thread, so that
- *   the app startup will not be delayed.
- * - If init() is not called, when initializing the class using getInstance(), this
- *   method will check if the data is loaded into the cache.
- * - getInstance(): if data is not loaded yet using init(), it will load the data
- *   in the main thread, so we recommend loading data in the background via init().
+ * [Usage]
+ * - SqlPreferences.getInstance().putString("key", "value").apply();
+ * - String val = SqlPreferences.getInstance().getString("key", "default");
  *
- * --------------------------------------------------------------------------------
- *  Implementation
- * --------------------------------------------------------------------------------
- * [1] Load data from disk to the cache:
- * - Call SqlPreferences.init() at the app start point, like Application.onCreate().
- * - You can optionally pass a callback to get notified when the data is fully loaded.
- *
- * [2] Initialize SqlPreferences
- * - Call SqlPreferences.getInstance() instead of using the constructor.
- *
- * [3] Save Data:
- * - Data is saved as key-value pairs; the same key is used to retrieve the data.
- * - You can save multiple data entries in a chain, then call apply() to commit changes.
- * - You can save various data types like String, Integer, Float, Double, etc.
- * - Example: SqlPreferences.getInstance()
- *                          .putString("my_name", "Sami")
- *                          .putDouble("weight", 35.4)
- *                          .putBoolean("isAdmin", true)
- *                          .apply();
- * - You can also save serializable objects or a list of serializable objects.
- * - Example: SqlPreferences.getInstance()
- *                         .putObject("user", new User(...))
- *                         .putListObject("users", Arrays.asList(new User(...)))
- *                         .apply();
- * - Warning: data will not be saved if not committed using .apply() at the end.
- *
- * [4] Retrieve Data:
- * - We can get the saved data by the key, and also provide a default value.
- * $ String name = SqlPreferences.getInstance().getString("my_name", "Unknown");
- * $ Integer age = SqlPreferences.getInstance().getInt("my_age", null);
- * - We can get saved objects using the key and the class name:
- * $ User user = SqlPreferences.getInstance().getObject("user", User.class);
- * $ List<User> users = SqlPreferences.getInstance().getListObject("users", User.class);
- *
- * [5] Remove Data:
- * - We can remove specific data by its key:
- * $ SqlPreferences.getInstance().remove("my_name");
- * $ SqlPreferences.getInstance().removeObject("specific_user");
- * - We can clear all saved data:
- * $ SqlPreferences.getInstance().clear();
- *
- * [6] Notes:
- * - getInstance() can be used only once:
- * $ SqlPreferences db = SqlPreferences.getInstance();
- * $ db.putString("name", "Nore");
- * $ db.clear();
- * --------------------------------------------------------------------------------
- *   Security
- * --------------------------------------------------------------------------------
- * - Even if the SQLite database is not located in a public directory, it still can
- *   be accessed from rooted devices.
- * - SqlPreferences encrypts the data on save and decrypts it on fetch.
- * - By default, encryption is enabled using the AES algorithm.
- * - You can disable encryption statically before this class is initialized, using
- *   SqlPreferences.enableEncryption = false;
- *
- * --------------------------------------------------------------------------------
- * $ Developed By: Rochdi Wafik
- * $ Last Update: 25-07-2026
- *
+ * [Security]
+ * - Data is encrypted using AES by default.
+ * - Can be disabled via SqlPreferences.ENABLE_ENCRYPTION = false.
+ * - Even if the database file is not public, it can be read on rooted
+ *   devices.
+ * ------------------------------------------------------------------------
+ * @implNote The library source (including DEFAULT_SECRET_KEY) is public on
+ *           GitHub. Always call setSecretKey() with an app-specific key.
+ * @author Rochdi Wafik
+ * @lastUpdate 25-07-2026
  */
 
 public class SqlPreferences extends SQLiteOpenHelper {
@@ -134,10 +65,9 @@ public class SqlPreferences extends SQLiteOpenHelper {
 
     /**
      * Executors
-     * ---------------------------------------------------------------------
-     * - IO operations take take and may block ui if executed in UI Thread.
-     * - Therefore we need to perform IO in background.
-     * - Caching are used to let user use this class in UI Thread.
+     * ------------------------------------------------------------------------
+     * - IO operations may block the UI thread, so they are executed in the
+     *   background. Caching allows this class to be used from the UI thread.
      */
     public static final ExecutorService executors = Executors.newFixedThreadPool(4);
 
@@ -179,15 +109,11 @@ public class SqlPreferences extends SQLiteOpenHelper {
     /**
      * Encryption
      * ------------------------------------------------------------------------
-     * - Rooted devices may access the saved data.
-     * - Therefore, It's recommended to keep encryption enabled. IF you want to
-     *   disable it, make sure to edit it before this class initialized,
-     *   usually in application->onCreate() or any app startup point
-     * @implNote Fixed: this library's source (including this default key) is public
-     *           on GitHub, so any app that never calls setSecretKey() is only as
-     *           "encrypted" as a key anyone can read from the repo. Call
-     *           setSecretKey() with an app-specific key before first use. If you
-     *           don't, getInstance() now warns loudly, and throws in debug builds.
+     * - Rooted devices may access the saved data, so encryption is recommended.
+     * - Disable via SqlPreferences.ENABLE_ENCRYPTION = false before init.
+     * @implNote The library source (including DEFAULT_SECRET_KEY) is public on
+     *           GitHub. Always call setSecretKey() with an app-specific key
+     *           before first use for meaningful encryption.
      */
     public static final String DEFAULT_SECRET_KEY = "Ser5@3h6K#t5?f&5";
     public static String SECRET_KEY = DEFAULT_SECRET_KEY;
@@ -195,18 +121,17 @@ public class SqlPreferences extends SQLiteOpenHelper {
 
     /**
      * Caching
-     * -------------------------------------------------------------------------
-     * - cache: hold saved data in-memory (ram)
-     * - tempMap: hold data added by put___() until user call apply()
+     * ------------------------------------------------------------------------
+     * - cache: holds saved data in memory (RAM).
+     * - tempMap: holds data added by put___() until apply() is called.
      */
     private final ConcurrentHashMap<String, Object> cache = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, Object> tempMap = new ConcurrentHashMap<>();
 
     /**
-     * ICallback
-     * -------------------------------------------------------------------------
-     * - This callback used to notify us when data is loaded to the cache
-     * - This callback used when we want to load data in background when app started.
+     * OnLoadListener
+     * ------------------------------------------------------------------------
+     * - Callback to notify when data is fully loaded into the cache.
      */
     public interface OnLoadListener{
         void onLoaded();
@@ -285,12 +210,11 @@ public class SqlPreferences extends SQLiteOpenHelper {
     }
 
     /**
-     * ---------------------------------------------------------------------------------
-     *  Warn If Using Default Secret Key
-     * ---------------------------------------------------------------------------------
-     * - This library's source (including DEFAULT_SECRET_KEY) is public on GitHub, so
-     *   relying on the default key means the "encryption" can be reversed by anyone
-     *   who reads the repo.
+     * ************************************************************************
+     * warnIfUsingDefaultSecretKey() (Private)
+     * ************************************************************************
+     * - Log a warning if the default secret key is being used.
+     * - The library source (including DEFAULT_SECRET_KEY) is public on GitHub.
      */
     private static void warnIfUsingDefaultSecretKey(){
         if(ENABLE_ENCRYPTION && DEFAULT_SECRET_KEY.equals(SECRET_KEY)){
@@ -303,12 +227,12 @@ public class SqlPreferences extends SQLiteOpenHelper {
     }
 
     /**
-     * ---------------------------------------------------------------------------
-     *  Get Current Secret Key
-     *  --------------------------------------------------------------------------
-     * - If we are in development mode, and we didn't provide a secret key,
-     *  the getInstance() will throw an exception.
-     * - So you may want to use this method to quickly assign secret key to setSecretKey()
+     * ************************************************************************
+     * getCurrentSecretKey()
+     * ************************************************************************
+     * - Get the current secret key used for encryption.
+     * ------------------------------------------------------------------------
+     * @return The current secret key string.
      */
     public String getCurrentSecretKey() {
         return SECRET_KEY;
@@ -317,12 +241,13 @@ public class SqlPreferences extends SQLiteOpenHelper {
 
 
     /**
+     * ************************************************************************
+     * onCreate()
+     * ************************************************************************
+     * - Called when the database is created for the first time.
+     * - Creates the preferences table.
      * ------------------------------------------------------------------------
-     * On Create
-     * ------------------------------------------------------------------------
-     * - This called when database create and installed
-     * - We use this method to create our table(s) and any necessary data
-     * @param db The database.
+     * @param db The SQLite database.
      */
     @Override
     public void onCreate(SQLiteDatabase db) {
@@ -337,14 +262,13 @@ public class SqlPreferences extends SQLiteOpenHelper {
 
 
     /**
+     * ************************************************************************
+     * onUpgrade()
+     * ************************************************************************
+     * - Called when the database version is increased.
+     * - Drops the existing table and recreates it.
      * ------------------------------------------------------------------------
-     * On Upgrade
-     * ------------------------------------------------------------------------
-     * - This is called when we want to upgrade db to new version
-     * - This case we should to drop tables, add tables,
-     *   or do anything else it needs to upgrade to the new schema version
-     * - We use it to check if the table already exists. if not: create it
-     * @param db The database.
+     * @param db         The SQLite database.
      * @param oldVersion The old database version.
      * @param newVersion The new database version.
      */
@@ -356,16 +280,14 @@ public class SqlPreferences extends SQLiteOpenHelper {
     }
 
     /**
-     * ---------------------------------------------------------------------------------
-     *   Init (Async)
-     * ---------------------------------------------------------------------------------
-     * - Use this method once the app opens (e.g., in Application.onCreate()) to load
-     *   data into the cache in the background.
-     * - This method accepts a callback to notify when data is fully loaded into cache.
-     * - Uses the default secret key.
-     *
-     * @param anyContext      Any valid context (will be safely converted to ApplicationContext)
-     * @param onLoadListener  Callback to notify when data loading is complete (can be null)
+     * ************************************************************************
+     * init() (Async)
+     * ************************************************************************
+     * - Load data into the cache in the background (uses default secret key).
+     * - Call this at app startup (e.g., Application.onCreate()).
+     * ------------------------------------------------------------------------
+     * @param anyContext      Any valid context.
+     * @param onLoadListener  Optional callback when loading is complete.
      */
     public static void init(Context anyContext, @Nullable OnLoadListener onLoadListener) {
         // Delegate to the overloaded method with a null secret key
@@ -373,19 +295,16 @@ public class SqlPreferences extends SQLiteOpenHelper {
     }
 
     /**
-     * ---------------------------------------------------------------------------------
-     *   Init (Async) with Custom Secret Key
-     * ---------------------------------------------------------------------------------
-     * - Use this method once the app opens (e.g., in Application.onCreate()) to load
-     *   data into the cache in the background using a custom encryption key.
-     * - This is the RECOMMENDED way to initialize the library if you are using a
-     *   custom secret key. It prevents main-thread blocking and ensures the correct
-     *   key is set before any data is read from or written to the database.
-     *
-     * @param anyContext      Any valid context (will be safely converted to ApplicationContext)
-     * @param secretKey       Custom secret key for encryption (16, 24, or 32 bytes).
-     *                        Pass null to use the default key.
-     * @param onLoadListener  Callback to notify when data loading is complete (can be null)
+     * ************************************************************************
+     * init() (Async) with Custom Secret Key
+     * ************************************************************************
+     * - Load data into the cache in the background using a custom secret key.
+     * - Recommended way to initialize the library with a custom key.
+     * ------------------------------------------------------------------------
+     * @param anyContext      Any valid context.
+     * @param secretKey       Custom secret key (16, 24, or 32 bytes), or null
+     *                        to use the default key.
+     * @param onLoadListener  Optional callback when loading is complete.
      */
     public static void init(Context anyContext, @Nullable String secretKey, @Nullable OnLoadListener onLoadListener) {
         // Create Instance (Double-checked locking)
@@ -419,14 +338,13 @@ public class SqlPreferences extends SQLiteOpenHelper {
     }
 
     /**
-     * ---------------------------------------------------------------------------------
-     *   Init (Sync)
-     * ---------------------------------------------------------------------------------
-     * - Use this method used to load stored data into the cache memory.
-     * - This method executed synchronously (in Main Thread).
-     * - Everytime this class is called, this method invoked to make sure data is loaded.
-     * - For better performance, use init() once app opened,
-     *   so that this method will not block the main thread, since data will be already loaded
+     * ************************************************************************
+     * initSync()
+     * ************************************************************************
+     * - Load stored data into the cache synchronously (on the calling thread).
+     * - Called automatically by getInstance() if data is not yet loaded.
+     * - For better performance, use init() at app startup so this does not
+     *   block the main thread.
      */
     public void initSync(){
         // Load all data from Sql to Cache
@@ -439,14 +357,15 @@ public class SqlPreferences extends SQLiteOpenHelper {
 
 
     /**
-     * ---------------------------------------------------------------------------------
-     * Allow Save Key With Nullable Value
-     * ---------------------------------------------------------------------------------
-     * - By-default nullable objects can be saved.
-     * - IF a key saved with null object, then it will also returned as null.
-     * - But sometime we don't want to save an object if it's null. (i.e: from an API)
-     * @apiNote If we need to disallow save null objects, then we have to return this
-     * method to it's default, by assign null
+     * ************************************************************************
+     * setAllowSaveNull()
+     * ************************************************************************
+     * - Set whether nullable values can be saved.
+     * - By default, nullable objects can be saved.
+     * ------------------------------------------------------------------------
+     * @param allowNull true to allow saving null values, false to disallow.
+     * @return This SqlPreferences instance for chaining.
+     * @apiNote If disallowing null, set to its default by passing null.
      */
     public SqlPreferences setAllowSaveNull(Boolean allowNull){
         this.allowSaveNull = allowNull;
@@ -454,12 +373,12 @@ public class SqlPreferences extends SQLiteOpenHelper {
     }
 
     /**
-     * ---------------------------------------------------------------------------------
-     * Apply
-     * ---------------------------------------------------------------------------------
-     * - when we put the necessary data, it's stored in temp map (cache)
-     * - Now, we move the temp map to the main map (Cache) and clear the temp map.
-     * - Asynchronously, we'll also write the data to disk (to sql database)
+     * ************************************************************************
+     * apply()
+     * ************************************************************************
+     * - Commit pending data: move temp data to cache and write to disk
+     *   asynchronously.
+     * - Must be called after put___() calls to persist the data.
      */
     public void apply(){
         // Check if null value allowed (allow save null)
@@ -491,11 +410,11 @@ public class SqlPreferences extends SQLiteOpenHelper {
 
     }
     /**
-     * ---------------------------------------------------------------------------------
-     * Clear
-     * ---------------------------------------------------------------------------------
-     * - Clear data from cache and disk
-     * - This will drop the table and any saved data will be erased
+     * ************************************************************************
+     * clear()
+     * ************************************************************************
+     * - Clear all data from cache and disk.
+     * - This will delete the table and all saved data.
      */
     public void clear(){
         // Clear cache
@@ -515,21 +434,18 @@ public class SqlPreferences extends SQLiteOpenHelper {
 
 
 
-    /*+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
-    /*++++++++++++++++++++++++++++++[ DB PUT ]+++++++++++++++++++++++++++++++++++*/
-    /*+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
+    /*==========================[ DB PUT ]==========================*/
 
 
     /**
-     * ---------------------------------------------------------------------------------
-     * Put String
-     * ---------------------------------------------------------------------------------
-     * @Note Example: putString("author", "Sami") | don't forget to call apply()
-     * @param key identifier
-     * @param value to save
-     * ---------------------------------------------------------------------------------
-     * - Put data in the temporary map,
-     * - once apply() is called, put temp map to cache (Sync), then write to disk (Async)
+     * ************************************************************************
+     * putString()
+     * ************************************************************************
+     * - Store a string value. Call apply() to persist.
+     * ------------------------------------------------------------------------
+     * @param key   The identifier key.
+     * @param value The value to save.
+     * @return This SqlPreferences instance for chaining.
      */
     public SqlPreferences putString(String key, String value){
         tempMap.put(key, value);
@@ -538,15 +454,14 @@ public class SqlPreferences extends SQLiteOpenHelper {
 
 
     /**
-     * ---------------------------------------------------------------------------------
-     *   Put Integer
-     * ---------------------------------------------------------------------------------
-     * @Note Example: putInt("age", 23) | don't forget to call apply()
-     * @param key identifier
-     * @param value to save
-     * ---------------------------------------------------------------------------------
-     * - Put data in the temporary map,
-     * - once apply() is called, put temp map to cache (Sync), then write to disk (Async)
+     * ************************************************************************
+     * putInt()
+     * ************************************************************************
+     * - Store an integer value. Call apply() to persist.
+     * ------------------------------------------------------------------------
+     * @param key   The identifier key.
+     * @param value The value to save.
+     * @return This SqlPreferences instance for chaining.
      */
 
     public SqlPreferences putInt(String key, int value){
@@ -556,15 +471,14 @@ public class SqlPreferences extends SQLiteOpenHelper {
 
 
     /**
-     * ---------------------------------------------------------------------------------
-     *   Put Boolean
-     * ---------------------------------------------------------------------------------
-     * @Note Example: putBoolean("isAdmin", true) | don't forget to call apply()
-     * @param key identifier
-     * @param value to save
-     * ---------------------------------------------------------------------------------
-     * - Put data in the temporary map,
-     * - once apply() is called, put temp map to cache (Sync), then write to disk (Async)
+     * ************************************************************************
+     * putBoolean()
+     * ************************************************************************
+     * - Store a boolean value. Call apply() to persist.
+     * ------------------------------------------------------------------------
+     * @param key   The identifier key.
+     * @param value The value to save.
+     * @return This SqlPreferences instance for chaining.
      */
     public SqlPreferences putBoolean(String key, Boolean value){
         tempMap.put(key, value);
@@ -572,15 +486,14 @@ public class SqlPreferences extends SQLiteOpenHelper {
     }
 
     /**
-     * ---------------------------------------------------------------------------------
-     *   Put Float
-     * ---------------------------------------------------------------------------------
-     * @Note Example: putFloat("degree", 8.5) | don't forget to call apply()
-     * @param key identifier
-     * @param value to save
-     * ---------------------------------------------------------------------------------
-     * - Put data in the temporary map,
-     * - once apply() is called, put temp map to cache (Sync), then write to disk (Async)
+     * ************************************************************************
+     * putFloat()
+     * ************************************************************************
+     * - Store a float value. Call apply() to persist.
+     * ------------------------------------------------------------------------
+     * @param key   The identifier key.
+     * @param value The value to save.
+     * @return This SqlPreferences instance for chaining.
      */
     public SqlPreferences putFloat(String key, float value){
         tempMap.put(key, value);
@@ -588,17 +501,14 @@ public class SqlPreferences extends SQLiteOpenHelper {
     }
 
     /**
-     * ---------------------------------------------------------------------------------
-     *   Put Long
-     * ---------------------------------------------------------------------------------
-     * @Note Example: putLong("time", 836876786845) | don't forget to call apply()
-     * @param key identifier
-     * @param value to save
-     * ---------------------------------------------------------------------------------
-     * - Put data in the temporary map,
-     * - once apply() is called, put temp map to cache (Sync), then write to disk (Async)
-     * - Fixed: parameter type was `float` (copy/paste from putFloat), which silently
-     *   truncated precision and made getLong() (checks `instanceof Long`) never match.
+     * ************************************************************************
+     * putLong()
+     * ************************************************************************
+     * - Store a long value. Call apply() to persist.
+     * ------------------------------------------------------------------------
+     * @param key   The identifier key.
+     * @param value The value to save.
+     * @return This SqlPreferences instance for chaining.
      */
     public SqlPreferences putLong(String key, long value){
         tempMap.put(key, value);
@@ -606,15 +516,14 @@ public class SqlPreferences extends SQLiteOpenHelper {
     }
 
     /**
-     * ---------------------------------------------------------------------------------
-     *   Put Double
-     * ---------------------------------------------------------------------------------
-     * @Note Example: putDouble("weight", 120.5) | don't forget to call apply()
-     * @param key identifier
-     * @param value to save
-     * ---------------------------------------------------------------------------------
-     * - Put data in the temporary map,
-     * - once apply() is called, put temp map to cache (Sync), then write to disk (Async)
+     * ************************************************************************
+     * putDouble()
+     * ************************************************************************
+     * - Store a double value. Call apply() to persist.
+     * ------------------------------------------------------------------------
+     * @param key   The identifier key.
+     * @param value The value to save.
+     * @return This SqlPreferences instance for chaining.
      */
     public SqlPreferences putDouble(String key, double value){
         tempMap.put(key, value);
@@ -622,16 +531,14 @@ public class SqlPreferences extends SQLiteOpenHelper {
     }
 
     /**
-     * ---------------------------------------------------------------------------------
-     *   Put Object
-     * ---------------------------------------------------------------------------------
-     * @Note Example: User user = getUser(); putObject(User.KEY, user);
-     *                don't forget to call apply()
-     * @param key identifier
-     * @param object Serializable object
-     * ---------------------------------------------------------------------------------
-     * - Put data in the temporary map,
-     * - once apply() is called, put temp map to cache (Sync), then write to disk (Async)
+     * ************************************************************************
+     * putObject()
+     * ************************************************************************
+     * - Store a serializable object. Call apply() to persist.
+     * ------------------------------------------------------------------------
+     * @param key    The identifier key.
+     * @param object The object to serialize and save.
+     * @return This SqlPreferences instance for chaining.
      */
     public  <T> SqlPreferences putObject(String key, T object){
 
@@ -650,16 +557,14 @@ public class SqlPreferences extends SQLiteOpenHelper {
     }
 
     /**
-     * ---------------------------------------------------------------------------------
-     *   Put List Of Object
-     * ---------------------------------------------------------------------------------
-     * @Note Example: List<User> users = getUsers(); putListObject(User.KEY, users);
-     *                don't forget to call apply()
-     * @param key identifier
-     * @param listObject List of Serializable object
-     * ---------------------------------------------------------------------------------
-     * - Put data in the temporary map,
-     * - once apply() is called, put temp map to cache (Sync), then write to disk (Async)
+     * ************************************************************************
+     * putListObject()
+     * ************************************************************************
+     * - Store a list of objects. Call apply() to persist.
+     * ------------------------------------------------------------------------
+     * @param key        The identifier key.
+     * @param listObject The list of objects to serialize and save.
+     * @return This SqlPreferences instance for chaining.
      */
     public <T> SqlPreferences putListObject(String key, List<T> listObject){
         // todo: if listObject is null or empty, then get(0) will throw indexOutOfBounds
@@ -687,23 +592,17 @@ public class SqlPreferences extends SQLiteOpenHelper {
 
 
 
-    /*+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
-    /*++++++++++++++++++++++++++++++[ DB GET ]+++++++++++++++++++++++++++++++++++*/
-    /*+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
+    /*==========================[ DB GET ]==========================*/
 
     /**
-     * ---------------------------------------------------------------------------------
-     * Get String
-     * ---------------------------------------------------------------------------------
-     * @apiNote Example: String city = getString("city", "rabat");
-     * @param key item identifier
-     * @param defaultValue if not found
-     * ---------------------------------------------------------------------------------
-     * - When using getInstance() or init(), the data will be loaded into the Cache.
-     * - Since data is stored in cache, we'll get it from cache not from disk.
-     * - (If key not exists in cache, means also not exists in disk)
-     * - In this way we'll get performance and UI Thread compatibility.
-     * - Which means we can use UI Thread to query our data  synchronously.
+     * ************************************************************************
+     * getString()
+     * ************************************************************************
+     * - Retrieve a string value by key.
+     * ------------------------------------------------------------------------
+     * @param key          The identifier key.
+     * @param defaultValue The default value if the key is not found.
+     * @return The stored string value, or defaultValue if not found.
      */
     public String getString(String key, String defaultValue){
         if(cache.containsKey(key)){
@@ -755,13 +654,14 @@ public class SqlPreferences extends SQLiteOpenHelper {
     }
 
     /**
-     * ---------------------------------------------------------------------------------
-     *   Get String
-     * ---------------------------------------------------------------------------------
-     * @Note Example: String name = getString("author", "not set");
-     * @param key identifier
-     * @param defaultValue if key not saved/exists
-     * @return result
+     * ************************************************************************
+     * getFloat()
+     * ************************************************************************
+     * - Retrieve a float value by key.
+     * ------------------------------------------------------------------------
+     * @param key          The identifier key.
+     * @param defaultValue The default value if not found.
+     * @return The stored float, or defaultValue if not found.
      */
     public Float getFloat(String key, Float defaultValue) {
         if(cache.containsKey(key)){
@@ -774,13 +674,14 @@ public class SqlPreferences extends SQLiteOpenHelper {
     }
 
     /**
-     * ---------------------------------------------------------------------------------
-     *   Get Long
-     * ---------------------------------------------------------------------------------
-     * @Note Example: String name = getString("author", "not set");
-     * @param key identifier
-     * @param defaultValue if key not saved/exists
-     * @return result
+     * ************************************************************************
+     * getInt()
+     * ************************************************************************
+     * - Retrieve an integer value by key.
+     * ------------------------------------------------------------------------
+     * @param key          The identifier key.
+     * @param defaultValue The default value if not found.
+     * @return The stored integer, or defaultValue if not found.
      */
     public Long getLong(String key, Long defaultValue) {
         if(cache.containsKey(key)){
@@ -793,13 +694,14 @@ public class SqlPreferences extends SQLiteOpenHelper {
     }
 
     /**
-     * ---------------------------------------------------------------------------------
-     *   Get Long
-     * ---------------------------------------------------------------------------------
-     * @Note Example: User user = getObject(User.class, User.KEY);
-     * @param key identifier
-     * @param classType to deserialize object to that type
-     * @return Object
+     * ************************************************************************
+     * getObject()
+     * ************************************************************************
+     * - Retrieve a deserialized object by key.
+     * ------------------------------------------------------------------------
+     * @param key       The identifier key.
+     * @param classType The class to deserialize to.
+     * @return The deserialized object, or null if not found.
      */
     public <T> @Nullable T getObject(String key, Class<T> classType){
         // Create DB Key
@@ -829,13 +731,14 @@ public class SqlPreferences extends SQLiteOpenHelper {
     }
 
     /**
-     * ---------------------------------------------------------------------------------
-     *   Get List of Object
-     * ---------------------------------------------------------------------------------
-     * @Note Example: List<User> users = getListObject(User.class, User.KEY);
-     * @param key identifier
-     * @param classType to deserialize object to that type
-     * @return List of Object
+     * ************************************************************************
+     * getObject()
+     * ************************************************************************
+     * - Retrieve a deserialized object by key.
+     * ------------------------------------------------------------------------
+     * @param key       The identifier key.
+     * @param classType The class to deserialize to.
+     * @return The deserialized object, or null if not found.
      */
     public <T> @Nullable List<T> getListObject(String key, Class<T> classType){
 
@@ -867,17 +770,15 @@ public class SqlPreferences extends SQLiteOpenHelper {
     }
 
 
-    /*++++++++++++++++++++++++++++++[ DELETE ]+++++++++++++++++++++++++++++++++++*/
+    /*==========================[ DELETE ]==========================*/
 
     /**
-     * ---------------------------------------------------------------------------------
-     *   Remove
-     * ---------------------------------------------------------------------------------
-     * @Note Example: remove("author");
-     * @param key identifier
-     * ---------------------------------------------------------------------------------
-     * - First remove the item from cache if isset
-     * - Then remove the item from disk in background
+     * ************************************************************************
+     * remove()
+     * ************************************************************************
+     * - Remove a data entry by key from cache and disk.
+     * ------------------------------------------------------------------------
+     * @param key The identifier key of the item to remove.
      */
     public synchronized void remove(String key) {
         // Remove the entry from cache
@@ -896,10 +797,12 @@ public class SqlPreferences extends SQLiteOpenHelper {
     }
 
     /**
-     * ---------------------------------------------------------------------------------
-     *  Remove Object
-     * ---------------------------------------------------------------------------------
-     * When object, we need to re-create the key by adding PREFIX_OBJ to the key
+     * ************************************************************************
+     * removeObject()
+     * ************************************************************************
+     * - Remove a saved object by key (adds PREFIX_OBJ internally).
+     * ------------------------------------------------------------------------
+     * @param key The object identifier key.
      */
     public void removeObject(String key){
         // Create Object Key
@@ -909,10 +812,12 @@ public class SqlPreferences extends SQLiteOpenHelper {
     }
 
     /**
-     * ---------------------------------------------------------------------------------
-     *  Remove List Object
-     * ---------------------------------------------------------------------------------
-     * When list object, we need to re-create the key by adding PREFIX_LIST to the key
+     * ************************************************************************
+     * removeListObject()
+     * ************************************************************************
+     * - Remove a saved list of objects by key (adds PREFIX_LIST internally).
+     * ------------------------------------------------------------------------
+     * @param key The list identifier key.
      */
     public void removeListObject(String key){
         // Create Object Key
@@ -924,13 +829,15 @@ public class SqlPreferences extends SQLiteOpenHelper {
 
 
 
-    /*++++++++++++++++++++++++++++++[ PRIVATE ]+++++++++++++++++++++++++++++++++++*/
+    /*==========================[ PRIVATE ]==========================*/
 
     /**
-     * ---------------------------------------------------------------------------------
-     *   Insert Map
-     * ---------------------------------------------------------------------------------
-     * @param dataSet map
+     * ************************************************************************
+     * insertMap() (Private)
+     * ************************************************************************
+     * - Insert a map of data into the SQLite database.
+     * ------------------------------------------------------------------------
+     * @param dataSet The data map to insert.
      */
     private synchronized void insertMap(Map<String, Object> dataSet){
         if(dataSet==null || dataSet.isEmpty()){
@@ -978,16 +885,15 @@ public class SqlPreferences extends SQLiteOpenHelper {
     }
 
     /**
-     * ---------------------------------------------------------------------------------
-     *   Get All
-     * ---------------------------------------------------------------------------------
-     * - Return All data saved in SqlPreferences
-     * - This method executed synchronously, which means it may block the UI if it's
-     *   called from Main Thread, make sure to call it in separate thread.
-     * - IF there any saved Object [putObject()], it will returned as Json (serialized).
-     * - All DataTypes are saved as String, then this method convert them to its original.
-     * @Note Example: Map<String, Object> dataSet = getAll();
-     * @return result Map
+     * ************************************************************************
+     * getAll()
+     * ************************************************************************
+     * - Return all data saved in SqlPreferences.
+     * - This method executes synchronously (may block the calling thread).
+     * - All data types are saved as strings and converted back to their
+     *   original types.
+     * ------------------------------------------------------------------------
+     * @return A map of all stored key-value pairs.
      */
     public  <T> Map<String, T> getAll() {
         Map<String, T> dataSet = new HashMap<>();
@@ -1038,8 +944,11 @@ public class SqlPreferences extends SQLiteOpenHelper {
 
 
 
-    /*#################################[Test Only]##############################*/
-    // helper method to deserialize a string to a serializable object
+    /*==============================[Test Only]==============================*/
+    /**
+     * deserialize() (Private Helper)
+     * - Deserialize a string to a serializable object (test only).
+     */
     private @Nullable Object deserialize(String serialized) {
         try {
             ByteArrayInputStream bais = new ByteArrayInputStream(serialized.getBytes());
@@ -1052,12 +961,13 @@ public class SqlPreferences extends SQLiteOpenHelper {
 
 
     /**
-     * ---------------------------------------------------------------------------------
-     * Set Secret Key
-     * ---------------------------------------------------------------------------------
-     * - Secret Key must be 16, 24, or 32 bytes long (128, 192, or 256 bits).
-     * - If an invalid key is provided in debug mode, it throws an exception.
-     * - In production, it silently falls back to the DEFAULT_SECRET_KEY to prevent crashes.
+     * ************************************************************************
+     * setSecretKey() (Private)
+     * ************************************************************************
+     * - Set the encryption secret key.
+     * - Key must be 16, 24, or 32 bytes long (128, 192, or 256 bits).
+     * ------------------------------------------------------------------------
+     * @param secretKey The secret key string.
      */
     private void setSecretKey(String secretKey) {
         if (secretKey == null) {

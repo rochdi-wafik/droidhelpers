@@ -5,11 +5,22 @@ import android.net.wifi.WifiManager;
 
 import java.lang.reflect.Method;
 
+/**
+ * ************************************************************************
+ * WifiHelper
+ * ************************************************************************
+ * Helper methods for WiFi operations.
+ */
 public class WifiHelper {
 
     /**
-     * Is Wifi Enabled
+     * ************************************************************************
+     * isWifiEnabled()
+     * ************************************************************************
+     * - Check if WiFi is enabled on the device.
      * ------------------------------------------------------------------------
+     * @param application The application instance.
+     * @return true if WiFi is enabled, false otherwise.
      */
     public static boolean isWifiEnabled(Application application){
         Context applicationContext = application.getApplicationContext();
@@ -18,8 +29,13 @@ public class WifiHelper {
     }
 
     /**
-     * Set Wifi Enabled
+     * ************************************************************************
+     * setWifiEnabled()
+     * ************************************************************************
+     * - Enable or disable WiFi on the device.
      * ------------------------------------------------------------------------
+     * @param application The application instance.
+     * @param setEnabled  true to enable, false to disable.
      */
     public static void setWifiEnabled(Application application, boolean setEnabled){
         Context applicationContext = application.getApplicationContext();
@@ -28,11 +44,13 @@ public class WifiHelper {
     }
 
     /**
-     * Is Wifi Hotspot Enabled
+     * ************************************************************************
+     * isHotspotEnabled()
+     * ************************************************************************
+     * - Check if the WiFi hotspot is enabled on the device.
      * ------------------------------------------------------------------------
-     * return True if enabled
-     * return false if disabled
-     * return null if something went wrong
+     * @param application The application instance.
+     * @return true if enabled, false if disabled, null if an error occurred.
      */
     public static Boolean isHotspotEnabled(Application application){
         Boolean isConnected = null;
@@ -49,8 +67,14 @@ public class WifiHelper {
     }
 
     /**
-     * Get Wifi IP Address
-     * -------------------------------------------------------------------
+     * ************************************************************************
+     * getWifiIpAddress()
+     * ************************************************************************
+     * - Get the WiFi IP address of the device.
+     * ------------------------------------------------------------------------
+     * @param context Any valid context.
+     * @return The WiFi IP address, or null if not available.
+     * @todo Not implemented yet.
      */
     public static String getWifiIpAddress(Context context){
         // todo not implemented yet

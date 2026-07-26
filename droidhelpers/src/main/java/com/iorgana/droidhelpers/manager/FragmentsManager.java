@@ -5,25 +5,14 @@ import androidx.fragment.app.FragmentActivity;
 import androidx.fragment.app.FragmentManager;
 
 /**
- * Fragments Store
- * -------------------------------------------------------------------------------------------------
- * - This class wil help us save the fragment instance (Like Fields, inner classes, etc)
- * - We'll be able to protect all data stored in fragment, from being lost, like Fields
- * ^
- * - Unless we manually change the data inside the fragment. like using onCreate()
- * - We cannot prevent invoke fragment lifecycle methods, like onCreate(),
- * - Because when  we use beginTransaction().replace(), the manager invoke the lifecycle fragment methods,
- * - Instead, is necessary, we can save data in bundle and retrieve it when fragment re-launched
- * ^
- * - If we want to clear a fragment, we simply replace the exist instance with new instance.
- * - When a fragment is saved in this class, if can get it whenever we want using get()
- * -----------------------------------------------------------------------------------------------
- * [Updates]
- * - ActivityContext has no meaning since we don't want to access the activity
- * - We only want to store instances
- */
-/**
- * @deprecated This class does not handle fragments lifecycle, only save them.
+ * ************************************************************************
+ * FragmentsManager
+ * ************************************************************************
+ * - Manages fragment instances using the FragmentManager.
+ * - Helps preserve fragment state across configuration changes.
+ * - Fragments are stored using their class name as a tag.
+ * ------------------------------------------------------------------------
+ * @deprecated This class does not handle fragment lifecycle, only saves them.
  */
 public class FragmentsManager {
 
@@ -33,12 +22,16 @@ public class FragmentsManager {
 
 
     /**
-     * Constructor
-     * -------------------------------------------------------------------------
-     * [-] Create one instance per Activity (e.g. in onCreate()); don't cache it
-     *     statically across Activity recreation.
+     * ************************************************************************
+     * FragmentsManager (Constructor)
+     * ************************************************************************
+     * - Create one instance per Activity (e.g., in onCreate()).
+     * - Do not cache it statically across Activity recreation.
+     * ------------------------------------------------------------------------
+     *
+     * @param context The FragmentActivity to get the FragmentManager from.
      */
-    public FragmentsManager(FragmentActivity context){
+    public FragmentsManager(FragmentActivity context) {
         this.fragmentManager = context.getSupportFragmentManager();
     }
 
@@ -52,29 +45,37 @@ public class FragmentsManager {
      */
 
     /**
-     * Add Fragment
-     * -------------------------------------------------------------------------
-     * - When adapter initialized, use this method to store all your fragments
-     * - Add fragment only if not exists in the List
+     * ************************************************************************
+     * add()
+     * ************************************************************************
+     * - Add a fragment to the FragmentManager if it does not already exist.
+     * ------------------------------------------------------------------------
+     *
+     * @param fragment The fragment to add.
      */
-    public void add(Fragment fragment){
+    public void add(Fragment fragment) {
         Class<?> mClass = fragment.getClass();
-        if(fragmentManager.findFragmentByTag(mClass.getName())==null) {
+        if (fragmentManager.findFragmentByTag(mClass.getName()) == null) {
             fragmentManager.beginTransaction().add(fragment, mClass.getName()).commit();
         }
     }
 
 
     /**
-     * Get Fragment
-     * -------------------------------------------------------------------------
-     * - Get the fragment that has been state-saved by addFragment
+     * ************************************************************************
+     * get()
+     * ************************************************************************
+     * - Get a previously added fragment by its class.
+     * ------------------------------------------------------------------------
+     *
+     * @param fragmentClass The class of the fragment to retrieve.
+     * @return The fragment instance, or null if not found.
      */
-    public Fragment get(Class<?> fragmentClass){
+    public Fragment get(Class<?> fragmentClass) {
         Fragment fragment = fragmentManager.findFragmentByTag(fragmentClass.getName());
-        if(fragment!=null){
+        if (fragment != null) {
             return fragment;
-        }else{
+        } else {
             return null;
         }
 //        Fragment fragment = instanceList.get(fragmentClass.getName());
@@ -87,18 +88,21 @@ public class FragmentsManager {
 //        return fragment;
     }
 
-    /*
+    /**
+     * ************************************************************************
+     * addAndGet()
+     * ************************************************************************
+     * - Add a fragment if not already saved, then return it.
+     * ------------------------------------------------------------------------
      *
-     * Get Fragment
-     * -------------------------------------------------------------------------
-     * - If fragment already saved in List, retrieve it
-     * - If not: save the given instance in list, and return
+     * @param fragment The fragment to add and/or retrieve.
+     * @return The fragment instance.
      */
-    public Fragment addAndGet(Fragment fragment){
+    public Fragment addAndGet(Fragment fragment) {
         // Check if already saved, if not? save it first.
         Class<?> mClass = fragment.getClass();
         Fragment savedFragment = fragmentManager.findFragmentByTag(mClass.getName());
-        if(savedFragment==null){
+        if (savedFragment == null) {
             fragmentManager.beginTransaction().add(fragment, mClass.getName()).commit();
         }
         return fragmentManager.findFragmentByTag(mClass.getName());
@@ -106,16 +110,21 @@ public class FragmentsManager {
 
 
     /**
-     * Replace fragment
-     * -------------------------------------------------------------------------
-     * - Replace old fragment with new fragment (fragment with same class)
+     * ************************************************************************
+     * replace()
+     * ************************************************************************
+     * - Replace an existing fragment with a new instance of the same class.
+     * ------------------------------------------------------------------------
+     *
+     * @param newFragment The new fragment instance.
+     * @return The new fragment instance.
      */
-    public Fragment replace(Fragment newFragment){
+    public Fragment replace(Fragment newFragment) {
         // Get old fragment
         Class<?> mClass = newFragment.getClass();
         Fragment savedFragment = fragmentManager.findFragmentByTag(mClass.getName());
 
-        if(savedFragment!=null){
+        if (savedFragment != null) {
             // Replace it with new fragment
             fragmentManager.beginTransaction().remove(savedFragment).commit();
         }
@@ -125,23 +134,30 @@ public class FragmentsManager {
     }
 
     /**
-     * Remove Fragment
-     * -------------------------------------------------------------------------
+     * ************************************************************************
+     * remove()
+     * ************************************************************************
+     * - Remove a fragment by its class.
+     * ------------------------------------------------------------------------
+     *
+     * @param fragmentClass The class of the fragment to remove.
      */
-    public void remove(Class<?> fragmentClass){
+    public void remove(Class<?> fragmentClass) {
         Fragment savedFragment = fragmentManager.findFragmentByTag(fragmentClass.getName());
 
-        if(savedFragment!=null){
+        if (savedFragment != null) {
             // Replace it with new fragment
             fragmentManager.beginTransaction().remove(savedFragment).commit();
         }
     }
 
     /**
-     * Remove All
-     * -------------------------------------------------------------------------
+     * ************************************************************************
+     * removeAll()
+     * ************************************************************************
+     * - Remove all fragments managed by this instance.
      */
-    public void removeAll(){
+    public void removeAll() {
 
     }
 

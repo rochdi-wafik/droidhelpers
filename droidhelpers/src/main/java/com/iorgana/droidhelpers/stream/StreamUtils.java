@@ -5,14 +5,21 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 
+/**
+ * ************************************************************************
+ * StreamUtils
+ * ************************************************************************
+ * Utility methods for stream operations.
+ */
 public class StreamUtils {
     /**
-     * ----------------------------------------------------------------
-     * Get String From Byte Stream
-     * ----------------------------------------------------------------
-     * Convert Stream response to String
-     * @param inputStream byte stream
-     * @return string result
+     * ************************************************************************
+     * streamToString()
+     * ************************************************************************
+     * - Convert an InputStream to a String.
+     * ------------------------------------------------------------------------
+     * @param inputStream The byte stream to convert.
+     * @return The resulting string, or null if an error occurs.
      */
     public static String streamToString(InputStream inputStream) {
         // [-] Convert Stream to String (Json)

@@ -9,19 +9,25 @@ import org.json.JSONTokener;
 
 import java.util.Iterator;
 
+/**
+ * ************************************************************************
+ * JsonConverter
+ * ************************************************************************
+ * - Utility methods for converting JSON key naming conventions between
+ *   camelCase (Java) and snake_case (JSON).
+ */
 public class JsonConverter {
     private static final String TAG = "__JsonHelper";
 
     /**
-     *--------------------------------------------------------------
-     * Convert Keys To Java Case
-     * --------------------------------------------------------------
-     * Recursively loops over a JSON string and changes all keys
-     * from snake_case (this_case) to camelCase (thisCase).
-     * Supports nested objects, nested arrays, and root-level arrays.
-     *
-     * @param jsonString JSON string in snake_case format
-     * @return JSON string in camelCase format, or null if parsing fails
+     * ************************************************************************
+     * convertKeysToJavaCase()
+     * ************************************************************************
+     * - Recursively convert all JSON keys from snake_case to camelCase.
+     * - Supports nested objects, nested arrays, and root-level arrays.
+     * ------------------------------------------------------------------------
+     * @param jsonString JSON string in snake_case format.
+     * @return JSON string in camelCase format, or null if parsing fails.
      */
     public static String convertKeysToJavaCase(String jsonString) {
         if (jsonString == null || jsonString.trim().isEmpty()) {
@@ -39,15 +45,14 @@ public class JsonConverter {
     }
 
     /**
-     *--------------------------------------------------------------
-     * Convert Keys To Json Case
-     * --------------------------------------------------------------
-     * Recursively loops over a JSON string and changes all keys
-     * from camelCase (thisCase) to snake_case (this_case).
-     * Supports nested objects, nested arrays, and root-level arrays.
-     *
-     * @param jsonString JSON string in camelCase format
-     * @return JSON string in snake_case format, or null if parsing fails
+     * ************************************************************************
+     * convertKeysToJsonCase()
+     * ************************************************************************
+     * - Recursively convert all JSON keys from camelCase to snake_case.
+     * - Supports nested objects, nested arrays, and root-level arrays.
+     * ------------------------------------------------------------------------
+     * @param jsonString JSON string in camelCase format.
+     * @return JSON string in snake_case format, or null if parsing fails.
      */
     public static String convertKeysToJsonCase(String jsonString) {
         if (jsonString == null || jsonString.trim().isEmpty()) {
@@ -65,15 +70,15 @@ public class JsonConverter {
     }
 
     /**
-     *--------------------------------------------------------------
-     * Convert Keys (Recursive Helper)
-     * --------------------------------------------------------------
-     * Recursively processes JSON values, converting keys of nested
-     * objects and items in arrays based on the target case format.
-     *
-     * @param value The current JSON value (Object, Array, or primitive)
-     * @param toJavaCase true to convert to camelCase, false for snake_case
-     * @return The converted JSON value
+     * ************************************************************************
+     * convertKeys() (Recursive Helper)
+     * ************************************************************************
+     * - Recursively process JSON values and convert keys.
+     * ------------------------------------------------------------------------
+     * @param value      The current JSON value (Object, Array, or primitive).
+     * @param toJavaCase true to convert to camelCase, false for snake_case.
+     * @return The converted JSON value.
+     * @throws JSONException if JSON processing fails.
      */
     private static Object convertKeys(Object value, boolean toJavaCase) throws JSONException {
         if (value instanceof JSONObject) {
@@ -104,14 +109,13 @@ public class JsonConverter {
     }
 
     /**
-     *--------------------------------------------------------------
-     * Java To Json Case
-     * --------------------------------------------------------------
-     * Converts a variable name from camelCase (thisCase) to
-     * snake_case (this_case).
-     *
-     * @param variableName Example: "appName"
-     * @return snake_case string: Example: "app_name"
+     * ************************************************************************
+     * javaToJsonCase()
+     * ************************************************************************
+     * - Convert a variable name from camelCase to snake_case.
+     * ------------------------------------------------------------------------
+     * @param variableName Example: "appName".
+     * @return snake_case string, e.g., "app_name".
      */
     public static String javaToJsonCase(String variableName) {
         if (variableName == null) {
@@ -130,15 +134,14 @@ public class JsonConverter {
     }
 
     /**
-     *--------------------------------------------------------------
-     * Json To Java Case
-     * --------------------------------------------------------------
-     * Converts a variable name from snake_case (this_case) to
-     * camelCase (thisCase). Safely bypasses conversion if no
-     * underscores are present.
-     *
-     * @param variableName Example: "app_name"
-     * @return camelCase string: Example: "appName"
+     * ************************************************************************
+     * jsonToJavaCase()
+     * ************************************************************************
+     * - Convert a variable name from snake_case to camelCase.
+     * - Bypasses conversion if no underscores are present.
+     * ------------------------------------------------------------------------
+     * @param variableName Example: "app_name".
+     * @return camelCase string, e.g., "appName".
      */
     public static String jsonToJavaCase(String variableName) {
         // Fixed: Replaced unreachable parts.length == 0 check with a proper contains check
@@ -157,13 +160,13 @@ public class JsonConverter {
     }
 
     /**
-     *--------------------------------------------------------------
-     * Capitalize First Letter
-     * --------------------------------------------------------------
-     * Helper method to capitalize the first character of a string.
-     *
-     * @param str The input string
-     * @return String with the first letter capitalized
+     * ************************************************************************
+     * capitalizeFirstLetter() (Private Helper)
+     * ************************************************************************
+     * - Capitalize the first character of a string.
+     * ------------------------------------------------------------------------
+     * @param str The input string.
+     * @return String with the first letter capitalized.
      */
     private static String capitalizeFirstLetter(String str) {
         if (str == null || str.isEmpty()) {

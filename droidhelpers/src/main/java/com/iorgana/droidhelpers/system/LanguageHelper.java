@@ -8,28 +8,46 @@ import android.util.DisplayMetrics;
 
 import java.util.Locale;
 
+/**
+ * ************************************************************************
+ * LanguageHelper
+ * ************************************************************************
+ * Helper methods for language and locale operations.
+ */
 public class LanguageHelper {
 
     /**
-     * Get Android System Language
-     * @return lang_code
+     * ************************************************************************
+     * getSystemLanguage()
+     * ************************************************************************
+     * - Get the Android system language code.
+     * ------------------------------------------------------------------------
+     * @return The system language code (e.g., "en", "ar").
      */
     public static String getSystemLanguage(){
         return Resources.getSystem().getConfiguration().locale.getLanguage();
     }
 
     /**
-     * Get Application Language
-     * @return lang_code
+     * ************************************************************************
+     * getAppLanguage()
+     * ************************************************************************
+     * - Get the current application language code.
+     * ------------------------------------------------------------------------
+     * @return The app language code (e.g., "en", "ar").
      */
     public static String getAppLanguage(){
         return Locale.getDefault().getLanguage();
     }
 
     /**
-     * Update App Language
-     * @param context:
-     * @param lang_code: ar en es etc
+     * ************************************************************************
+     * updateAppLanguage()
+     * ************************************************************************
+     * - Update the application language at runtime.
+     * ------------------------------------------------------------------------
+     * @param context   Any valid context.
+     * @param lang_code The language code (e.g., "en", "ar", "es").
      */
     public static void updateAppLanguage(Context context, String lang_code) {
         Locale myLocal = new Locale(lang_code);

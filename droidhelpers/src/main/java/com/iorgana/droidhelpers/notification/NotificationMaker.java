@@ -16,16 +16,15 @@ import com.iorgana.droidhelpers.R;
 
 import java.util.Random;
 /**
- * Notification Maker
- * -----------------------------------------------------------------------------
- * [Single Notification]
- * - Use Constructor to make unique notification
- * [Shared Notification]
- * - Use getInstance() to make single shared notification
- * - This can be used to share a single notification between multiple services
- * -------------------------------------------------------------------------------
- * @apiNote Runtime Permissions:  android.permission.POST_NOTIFICATIONS (for Android 13 and above)
- * - show() will silently no-op if permission isn't granted.
+ * ************************************************************************
+ * NotificationMaker
+ * ************************************************************************
+ * - Build and manage Android notifications.
+ * - Use the constructor for single unique notifications.
+ * - Use getInstance() for a shared notification across multiple services.
+ * ------------------------------------------------------------------------
+ * @apiNote Requires android.permission.POST_NOTIFICATIONS (Android 13+).
+ *          show() will silently no-op if permission is not granted.
  */
 public class NotificationMaker {
     private static final String TAG = "__SharedNotification";
@@ -56,9 +55,12 @@ public class NotificationMaker {
     private Boolean alertOnce;
 
     /**
-     * Constructor (Single)
-     * ----------------------------------------------------------------
-     * - Use this constructor to make single unique notification
+     * ************************************************************************
+     * NotificationMaker (Constructor - Single)
+     * ************************************************************************
+     * - Create a single unique notification instance.
+     * ------------------------------------------------------------------------
+     * @param context Any valid context.
      */
     public NotificationMaker(Context context) {
         this.context = (Application) context.getApplicationContext();
@@ -66,9 +68,13 @@ public class NotificationMaker {
     }
 
     /**
-     * Get Instance (Shared)
-     * ----------------------------------------------------------------
-     * - Use this method to create shared notification (singleton)
+     * ************************************************************************
+     * getInstance() (Shared)
+     * ************************************************************************
+     * - Get a shared singleton notification instance.
+     * ------------------------------------------------------------------------
+     * @param context Any valid context.
+     * @return The singleton NotificationMaker instance.
      */
     public static NotificationMaker getInstance(Context context) {
         if (INSTANCE == null) {
@@ -82,10 +88,12 @@ public class NotificationMaker {
     }
 
     /**
-     * Helper to check if notifications are enabled for the app.
-     * ----------------------------------------------------------------
-     * - Useful for checking runtime permission status on Android 13 (API 33) and above.
-     *
+     * ************************************************************************
+     * areNotificationsEnabled()
+     * ************************************************************************
+     * - Check if notifications are enabled for the app.
+     * - Useful for checking runtime permission status on Android 13+.
+     * ------------------------------------------------------------------------
      * @return true if notifications are enabled, false otherwise.
      */
     public boolean areNotificationsEnabled() {
@@ -93,8 +101,12 @@ public class NotificationMaker {
     }
 
     /**
-     * Get Notification
-     * ----------------------------------------------------------------
+     * ************************************************************************
+     * create()
+     * ************************************************************************
+     * - Build and return the notification object.
+     * ------------------------------------------------------------------------
+     * @return The constructed Notification object.
      */
     public Notification create() {
         // Create Notification Channel
@@ -140,8 +152,11 @@ public class NotificationMaker {
     }
 
     /**
-     * Show Notification
-     * -----------------------------------------------------------------------
+     * ************************************************************************
+     * show()
+     * ************************************************************************
+     * - Display the notification.
+     * - Silently no-ops if POST_NOTIFICATIONS permission is not granted.
      */
     public void show() {
         // Silently no-op if permission isn't granted
@@ -161,8 +176,14 @@ public class NotificationMaker {
     }
 
     /**
-     * Update Notification
-     * -----------------------------------------------------------------------
+     * ************************************************************************
+     * updateNotification()
+     * ************************************************************************
+     * - Update the existing notification with new title, content, or icon.
+     * ------------------------------------------------------------------------
+     * @param mTitle   Optional new title (null to keep current).
+     * @param mContent Optional new content (null to keep current).
+     * @param mResIcon Optional new icon resource ID (null to keep current).
      */
     public void updateNotification(@Nullable String mTitle, @Nullable String mContent, @Nullable Integer mResIcon) {
         if (mTitle != null) this.title = mTitle;
@@ -182,8 +203,10 @@ public class NotificationMaker {
     }
 
     /**
-     * Remove Notification
-     * -----------------------------------------------------------------------
+     * ************************************************************************
+     * cancelNotification()
+     * ************************************************************************
+     * - Cancel (remove) the notification.
      */
     public void cancelNotification() {
         if (notificationManager != null) {
@@ -191,9 +214,9 @@ public class NotificationMaker {
         }
     }
 
-    /**
-     * Setters
-     */
+    /*------------------------------------------------------------------------*/
+    /*  Setters                                                               */
+    /*------------------------------------------------------------------------*/
     public NotificationMaker setTitle(String title) {
         this.title = title;
         return this;
@@ -241,9 +264,9 @@ public class NotificationMaker {
         return this;
     }
 
-    /**
-     * Getters
-     */
+    /*------------------------------------------------------------------------*/
+    /*  Getters                                                               */
+    /*------------------------------------------------------------------------*/
     public NotificationCompat.Builder getNotificationBuilder() {
         return notificationBuilder;
     }

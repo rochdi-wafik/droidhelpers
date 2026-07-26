@@ -1,10 +1,15 @@
 package com.iorgana.droidhelpers_project.ui;
 
+import android.app.Activity;
 import android.os.Bundle;
+import android.view.Menu;
+import android.view.MenuItem;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import com.iorgana.droidhelpers_project.R;
 import com.iorgana.droidhelpers_project.databinding.ActivityMainBinding;
 import com.iorgana.droidhelpers_project.ui.adapter.HelperBoxAdapter;
 import com.iorgana.droidhelpers_project.ui.demo.AlertsActivity;
@@ -31,6 +36,7 @@ import java.util.List;
  */
 public class MainActivity extends AppCompatActivity {
     ActivityMainBinding binding;
+    Activity activity = this;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -54,5 +60,49 @@ public class MainActivity extends AppCompatActivity {
 
         binding.recyclerHelperBoxes.setLayoutManager(new LinearLayoutManager(this));
         binding.recyclerHelperBoxes.setAdapter(new HelperBoxAdapter(boxes));
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.menu_actionbar, menu);
+        return super.onCreateOptionsMenu(menu);
+    }
+
+    /**
+     * Handle Menu Items
+     * ------------------------------------------------------------------------
+     */
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        int itemId = item.getItemId();
+
+        // Item info
+        if(itemId == R.id.nav_about_us){
+            // Show developer name: Developed By Rochdi Wafik
+            // Show Version: 1.0.4
+            // Show GitHub link: https://github.com/rochdi-wafik/droidhelpers
+            String message = "Developed By: Rochdi Wafik\n" +
+                    "Version: 1.0.4\n" +
+                    "GitHub: https://github.com/rochdi-wafik/droidhelpers";
+            new MaterialAlertDialogBuilder(activity)
+                    .setTitle("About DroidHelpers")
+                    .setMessage(message)
+                    .show();
+        }
+
+        // item exit
+        if (itemId == R.id.nav_exit) {
+            new MaterialAlertDialogBuilder(activity)
+                    .setTitle("Exit Confirmation")
+                    .setMessage("Are you sure you want to exit?")
+                    .setPositiveButton("Exit", (dialogInterface, i)->{
+                        activity.finishAffinity();
+                        System.exit(0);
+                    })
+                    .setNegativeButton("Cancel", ((dialogInterface, i) -> dialogInterface.dismiss()))
+                    .show();
+        }
+
+        return super.onOptionsItemSelected(item);
     }
 }

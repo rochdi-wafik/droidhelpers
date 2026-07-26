@@ -5,13 +5,14 @@ import java.util.Locale;
 import java.util.Locale;
 
 /**
- * Chronometer Timer
- * -------------------------------------------------------------------------------
- * - This timer counts up from zero and can be paused, resumed, and stopped.
- * - It notifies listeners of changes in the current time in both string and long formats.
- * -------------------------------------------------------------------------------
- * @apiNote Warning: Listener all invoked in background thread, Make sure to switch
- *         to main thread if you want to update UI.
+ * ************************************************************************
+ * ChronometerTimer
+ * ************************************************************************
+ * - A timer that counts up from zero, supporting pause, resume, and stop.
+ * - Notifies listeners of time changes in both string and long formats.
+ * ------------------------------------------------------------------------
+ * @apiNote Listeners are invoked in a background thread. Switch to the main
+ *          thread if you need to update the UI.
  */
 public class ChronometerTimer {
     private long startTime;
@@ -27,37 +28,61 @@ public class ChronometerTimer {
     private Thread timerThread;
 
     /**
-     * Get Value
+     * ************************************************************************
+     * getLastString()
+     * ************************************************************************
+     * - Get the last recorded time value as a string.
+     * ------------------------------------------------------------------------
+     * @return The last time string (e.g., "00:00:00").
      */
     public String getLastString() {
         return this.lastValueStr;
     }
 
+    /**
+     * ************************************************************************
+     * getLastLong()
+     * ************************************************************************
+     * - Get the last recorded elapsed time in milliseconds.
+     * ------------------------------------------------------------------------
+     * @return The last elapsed time as a long value.
+     */
     public Long getLastLong() {
         return this.lastValueLong;
     }
 
     /**
-     * Add Listener (Option 1)
-     * @param onTimeChange {@link OnTimeChange}
+     * ************************************************************************
+     * setListener() (Option 1)
+     * ************************************************************************
+     * - Register an OnTimeChange listener.
+     * ------------------------------------------------------------------------
+     * @param onTimeChange The OnTimeChange callback.
      */
     public void setListener(OnTimeChange onTimeChange) {
         this.onTimeChange = onTimeChange;
     }
 
     /**
-     * Add Listener (Option 2)
-     * @param onTimeListener {@link OnTimeListener}
+     * ************************************************************************
+     * setListener() (Option 2)
+     * ************************************************************************
+     * - Register an OnTimeListener (abstract class).
+     * ------------------------------------------------------------------------
+     * @param onTimeListener The OnTimeListener callback.
      */
     public void setListener(OnTimeListener onTimeListener) {
         this.onTimeListener = onTimeListener;
     }
 
     /**
-     * Start Chronometer from 0
-     * --------------------------------------------------------------
-     *  @apiNote Warning: Listener all invoked in background thread, Make sure to switch
-     *           to main thread if you want to update UI.
+     * ************************************************************************
+     * start()
+     * ************************************************************************
+     * - Start the chronometer counting from zero.
+     * ------------------------------------------------------------------------
+     * @apiNote Listeners are invoked in a background thread. Switch to the main
+     *          thread if you need to update the UI.
      */
     public void start() {
         if (!isRunning) {
@@ -70,8 +95,10 @@ public class ChronometerTimer {
     }
 
     /**
-     * Pause Chronometer
-     * --------------------------------------------------------------
+     * ************************************************************************
+     * pause()
+     * ************************************************************************
+     * - Pause the chronometer.
      */
     public void pause() {
         isRunning = false;
@@ -82,8 +109,10 @@ public class ChronometerTimer {
     }
 
     /**
-     * Resume Chronometer
-     * --------------------------------------------------------------
+     * ************************************************************************
+     * resume()
+     * ************************************************************************
+     * - Resume the chronometer from where it was paused.
      */
     public void resume() {
         if (isPaused && !isRunning) {
@@ -95,8 +124,10 @@ public class ChronometerTimer {
     }
 
     /**
-     * Stop & Reset
-     * --------------------------------------------------------------
+     * ************************************************************************
+     * stop()
+     * ************************************************************************
+     * - Stop the chronometer and reset the elapsed time to zero.
      */
     public void stop() {
         isRunning = false;
@@ -121,23 +152,37 @@ public class ChronometerTimer {
     }
 
     /**
-     * Is Counting
+     * ************************************************************************
+     * isCounting()
+     * ************************************************************************
+     * - Check if the chronometer is currently running.
+     * ------------------------------------------------------------------------
+     * @return true if counting, false otherwise.
      */
     public boolean isCounting() {
         return this.isRunning;
     }
 
     /**
-     * Is Paused
+     * ************************************************************************
+     * isPaused()
+     * ************************************************************************
+     * - Check if the chronometer is paused.
+     * ------------------------------------------------------------------------
+     * @return true if paused, false otherwise.
      */
     public boolean isPaused() {
         return this.isPaused;
     }
 
     /**
-     * Long Time To String
-     * --------------------------------------------------------------
-     * Format long to human readable: "hours:minutes:seconds"
+     * ************************************************************************
+     * longToString()
+     * ************************************************************************
+     * - Format a time in milliseconds to a human-readable string (HH:mm:ss).
+     * ------------------------------------------------------------------------
+     * @param time The time in milliseconds.
+     * @return The formatted time string.
      */
     public static String longToString(long time) {
         long hours = (time / (1000 * 60 * 60)) % 24;
@@ -148,7 +193,10 @@ public class ChronometerTimer {
     }
 
     /**
-     * Starts the background thread for time updates
+     * ************************************************************************
+     * startTimerThread()
+     * ************************************************************************
+     * - Start the background thread that updates the elapsed time.
      */
     private void startTimerThread() {
         timerThread = new Thread(() -> {
@@ -186,14 +234,24 @@ public class ChronometerTimer {
     /*-------------------------------[Listeners]---------------------------*/
 
     /**
-     * We can either use Interface listener {@link OnTimeChange}
-     * Or we can use Abstract Listener {@link OnTimeListener}
+     * ************************************************************************
+     * OnTimeChange
+     * ************************************************************************
+     * - Interface listener for time change events.
+     * - Alternatively, use {@link OnTimeListener} for an abstract class.
      */
     public interface OnTimeChange {
         void onChange(String currentTime);
         void onChange(Long currentTime);
     }
 
+    /**
+     * ************************************************************************
+     * OnTimeListener
+     * ************************************************************************
+     * - Abstract class listener for time change events.
+     * - Alternatively, use {@link OnTimeChange} for an interface.
+     */
     public abstract static class OnTimeListener {
         public abstract void onChange(String currentTime);
         public abstract void onChange(Long currentTime);

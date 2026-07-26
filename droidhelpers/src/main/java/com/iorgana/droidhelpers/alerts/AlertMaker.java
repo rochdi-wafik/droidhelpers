@@ -13,10 +13,31 @@ import androidx.core.content.res.ResourcesCompat;
 
 import com.iorgana.droidhelpers.R;
 
+/**
+ * ************************************************************************
+ * AlertMaker
+ * ************************************************************************
+ * - Builder class for creating styled alert layouts.
+ * - Supports multiple alert types (Primary, Secondary, Info, Success,
+ *   Warning, Danger, HTML).
+ */
 public class AlertMaker {
+    /**
+     * ************************************************************************
+     * OnCloseListener
+     * ************************************************************************
+     * - Callback interface for alert close events.
+     */
     public interface OnCloseListener{
         void onClose();
     }
+
+    /**
+     * ************************************************************************
+     * AlertType
+     * ************************************************************************
+     * - Enum defining the available alert style types.
+     */
     public enum AlertType {
         Primary, Secondary, Info, Success, Warning, Danger, HTML, DEFAULT
     }
@@ -42,12 +63,26 @@ public class AlertMaker {
 
 
 
+    /**
+     * ************************************************************************
+     * AlertMaker (Constructor)
+     * ************************************************************************
+     * - Create a new AlertMaker instance.
+     * ------------------------------------------------------------------------
+     * @param context Any valid context.
+     */
     public AlertMaker(Context context){
         this.context = context;
     }
 
     /**
-     * Set Alert AlertType
+     * ************************************************************************
+     * setType()
+     * ************************************************************************
+     * - Set the alert type style.
+     * ------------------------------------------------------------------------
+     * @param alertType The AlertType to apply.
+     * @return This AlertMaker instance for chaining.
      */
     public AlertMaker setType(AlertType alertType) {
         this.alertType = alertType;
@@ -55,7 +90,13 @@ public class AlertMaker {
     }
 
     /**
-     * Set Label
+     * ************************************************************************
+     * setTitle()
+     * ************************************************************************
+     * - Set the alert title text.
+     * ------------------------------------------------------------------------
+     * @param title The title string.
+     * @return This AlertMaker instance for chaining.
      */
     public AlertMaker setTitle(String title) {
         this.title = title;
@@ -63,7 +104,13 @@ public class AlertMaker {
     }
 
     /**
-     * Set Content
+     * ************************************************************************
+     * setContent()
+     * ************************************************************************
+     * - Set the alert content text.
+     * ------------------------------------------------------------------------
+     * @param content The content string.
+     * @return This AlertMaker instance for chaining.
      */
     public AlertMaker setContent(String content) {
         this.content = content;
@@ -71,7 +118,14 @@ public class AlertMaker {
     }
 
     /**
-     * Set Html
+     * ************************************************************************
+     * setHtml()
+     * ************************************************************************
+     * - Set HTML content for the alert.
+     * ------------------------------------------------------------------------
+     * @param html The HTML string.
+     * @return This AlertMaker instance for chaining.
+     * @deprecated HTML alerts are under maintenance and not functional.
      */
     public AlertMaker setHtml(String html) {
         this.html = html;
@@ -79,7 +133,13 @@ public class AlertMaker {
     }
 
     /**
-     * Set Is Cancelable
+     * ************************************************************************
+     * setCancelable()
+     * ************************************************************************
+     * - Set whether the alert is cancelable (can be dismissed).
+     * ------------------------------------------------------------------------
+     * @param cancelable true to allow dismissal, false otherwise.
+     * @return This AlertMaker instance for chaining.
      */
     public AlertMaker setCancelable(boolean cancelable) {
         this.isCancelable = cancelable;
@@ -87,7 +147,16 @@ public class AlertMaker {
     }
 
     /**
-     * Set Alert Margins
+     * ************************************************************************
+     * setMargins()
+     * ************************************************************************
+     * - Set all four margins for the alert layout.
+     * ------------------------------------------------------------------------
+     * @param marginTop    The top margin in pixels.
+     * @param marginBottom The bottom margin in pixels.
+     * @param marginStart  The start margin in pixels.
+     * @param marginEnd    The end margin in pixels.
+     * @return This AlertMaker instance for chaining.
      */
     public AlertMaker setMargins(int marginTop, int marginBottom, int marginStart, int marginEnd){
         this.marginTop = marginTop;
@@ -98,14 +167,26 @@ public class AlertMaker {
     }
 
     /**
-     * Set Margin Top
+     * ************************************************************************
+     * setMarginTop()
+     * ************************************************************************
+     * - Set the top margin for the alert layout.
+     * ------------------------------------------------------------------------
+     * @param marginTop The top margin in pixels.
+     * @return This AlertMaker instance for chaining.
      */
     public AlertMaker setMarginTop(int marginTop){
         this.marginTop = marginTop;
         return this;
     }
     /**
-     * Set Margin Bottom
+     * ************************************************************************
+     * setMarginBottom()
+     * ************************************************************************
+     * - Set the bottom margin for the alert layout.
+     * ------------------------------------------------------------------------
+     * @param marginBottom The bottom margin in pixels.
+     * @return This AlertMaker instance for chaining.
      */
     public AlertMaker setMarginBottom(int marginBottom){
         this.marginBottom = marginBottom;
@@ -113,7 +194,13 @@ public class AlertMaker {
     }
 
     /**
-     * Set Close Listener
+     * ************************************************************************
+     * setListener()
+     * ************************************************************************
+     * - Set the close listener for the alert.
+     * ------------------------------------------------------------------------
+     * @param onCloseListener The OnCloseListener callback.
+     * @return This AlertMaker instance for chaining.
      */
     public AlertMaker setListener(OnCloseListener onCloseListener){
         this.onCloseListener = onCloseListener;
@@ -121,14 +208,26 @@ public class AlertMaker {
     }
 
     /**
-     * Get Last Error
+     * ************************************************************************
+     * getLastError()
+     * ************************************************************************
+     * - Get the last error message that occurred.
+     * ------------------------------------------------------------------------
+     * @return The last error string, or null.
      */
     public String getLastError(){
         return this.lastError;
     }
 
     /**
-     * Show Alert
+     * ************************************************************************
+     * build()
+     * ************************************************************************
+     * - Build and return the alert layout.
+     * - If AlertType is HTML and HTML content is set, tries HTML layout.
+     * - Otherwise, builds a normal styled layout.
+     * ------------------------------------------------------------------------
+     * @return The constructed LinearLayout for the alert.
      */
     public LinearLayout build(){
 
@@ -147,10 +246,14 @@ public class AlertMaker {
 
 
     /**
-     * Build Html Layout
-     * @deprecated This method is not working in this release,
-     *             7/25/2026 HtmlFormatter removed from the lib because it had some bugs.
-     *             we'll see if we can replace it with something else or new HtmlFormatter
+     * ************************************************************************
+     * buildHtmlLayout()
+     * ************************************************************************
+     * - Build an HTML-based alert layout.
+     * ------------------------------------------------------------------------
+     * @return The HTML LinearLayout, or null if HTML content is not set.
+     * @deprecated This method is not working in this release. HtmlFormatter
+     *             was removed because it had bugs. Will be replaced in the future.
      */
     private LinearLayout buildHtmlLayout(){
         if(html!=null && !html.isEmpty() && alertType== AlertType.HTML){
@@ -203,7 +306,12 @@ public class AlertMaker {
 
 
     /**
-     * Build Normal Layout
+     * ************************************************************************
+     * buildNormalLayout()
+     * ************************************************************************
+     * - Build a styled alert layout with the selected AlertType.
+     * ------------------------------------------------------------------------
+     * @return The constructed LinearLayout.
      */
     private LinearLayout buildNormalLayout(){
         // Get Layout Views

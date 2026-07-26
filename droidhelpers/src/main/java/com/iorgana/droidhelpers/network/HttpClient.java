@@ -24,18 +24,16 @@ import okhttp3.ResponseBody;
  * HttpClient
  * ************************************************************************
  * - Thin OkHttp wrapper for basic network calls (GET/POST).
- * - Singleton: one shared OkHttpClient (connection pool, 15s connect /
- *   20s read timeouts) reused across the whole module.
+ * - Singleton with one shared OkHttpClient (connection pool, 15s connect
+ *   / 20s read timeouts) reused across the whole module.
+ * - Headers are passed per-call (method parameter), not stored as mutable
+ *   instance state, preventing concurrency issues.
+ * - Requests can be tagged with a unique "requestId" for targeted
+ *   cancellation via cancelRequestById(requestId).
  * ------------------------------------------------------------------------
- * - Headers are passed per-call (as a method parameter), NOT stored as
- *   mutable instance state. The old addHeaders()/clearHeaders() instance
- *   fields were removed because they raced across concurrent callers of
- *   the shared singleton (one request's headers could be cleared or
- *   overwritten by another in flight). Pass headers directly to each
- *   get()/post...() call instead.
- * ------------------------------------------------------------------------
- * - Requests can be tagged with a unique "requestId" to allow targeted
- *   cancellation later via cancelRequestById(requestId).
+ * @apiNote The okhttp dependency must be declared as `api` (not
+ *          `implementation`) in the build.gradle because OkHttpClient and
+ *          related types appear in public method signatures.
  */
 public class HttpClient {
     private static final String TAG = "__HttpClient";
@@ -50,11 +48,9 @@ public class HttpClient {
      * ************************************************************************
      * ICallback (Interface)
      * ************************************************************************
-     * - onSuccess(rawData): fires for ANY HTTP response (2xx AND 4xx/5xx),
-     *   the server mirrors the API status in the HTTP status and puts the
-     *   error details in the body, so the caller (LicenseApiClient.parse())
-     *   must read the body to extract error.code/error.message.
-     * - onError(e): transport failures only (no connection, timeout, DNS).
+     * - Callback interface for HTTP request results.
+     * - onSuccess: fires for ANY HTTP response (2xx, 4xx, 5xx).
+     * - onError: fires for transport failures (no connection, timeout, DNS).
      */
     public interface ICallback {
         void onSuccess(byte[] rawBytes, Headers headers);
@@ -62,10 +58,10 @@ public class HttpClient {
     }
 
     /**
-     * ****************************************************************************
-     *   Constructor (Private)
-     * ****************************************************************************
-     * - Use getInstance() to get singleton instance
+     * ************************************************************************
+     * HttpClient (Private Constructor)
+     * ************************************************************************
+     * - Use getInstance() to get the singleton instance.
      */
     private HttpClient() {
         // Initialize OkHttpClient within the private constructor
@@ -83,11 +79,12 @@ public class HttpClient {
     }
 
     /**
-     * ****************************************************************************
-     * Get Instance
-     * ****************************************************************************
-     * - Use this to get singleton instance.
-     * - This method is thread-safe using double-checked locking for lazy initialization.
+     * ************************************************************************
+     * getInstance()
+     * ************************************************************************
+     * - Get the singleton HttpClient instance (thread-safe, lazy init).
+     * ------------------------------------------------------------------------
+     * @return The singleton HttpClient instance.
      */
     public static HttpClient getInstance() {
         if (INSTANCE == null) { // First check (no lock)
@@ -101,23 +98,16 @@ public class HttpClient {
     }
 
     /**
-     * ****************************************************************************
-     *  Get HTTP Client
-     * ****************************************************************************
-     * - Retrieves the configured OkHttpClient instance for making HTTP requests.
+     * ************************************************************************
+     * getClient()
+     * ************************************************************************
+     * - Get the configured OkHttpClient instance.
      * ------------------------------------------------------------------------
      * @return The singleton OkHttpClient instance.
-     * @throws IllegalStateException if the HttpClient has not been properly initialized
-     * (e.g., if getInstance() hasn't been called, though it initializes lazily).
-     * @apiNote This method returns a third-party type (okhttp3.OkHttpClient), so the
-     *          `okhttp` dependency in this module's build.gradle MUST stay declared as
-     *          `api`, not `implementation`. `implementation` hides a dependency's classes
-     *          from consumers of this module, so any consumer module trying to name
-     *          `OkHttpClient` (or Response/Call/Headers, also returned/accepted by this
-     *          class' public methods) would fail with "Cannot access ..." even though
-     *          calling getInstance()/getClient() itself compiles fine. Rule of thumb:
-     *          any dependency type that appears in a public method signature here must
-     *          be `api`, not `implementation`.
+     * @throws IllegalStateException if HttpClient is not initialized.
+     * @apiNote The okhttp dependency must be declared as `api` (not
+     *          `implementation`) in the build.gradle because OkHttpClient and
+     *          related types appear in public method signatures.
      */
     public OkHttpClient getClient() {
         if (okHttpClient == null) {
@@ -130,11 +120,13 @@ public class HttpClient {
 
     /**
      * ************************************************************************
-     * Apply Headers (private helper)
+     * applyHeaders() (Private Helper)
      * ************************************************************************
-     * - Adds the given per-call headers (if any) to the request builder.
-     * - Headers are never stored on the instance, so concurrent calls never
-     *   interfere with each other's headers.
+     * - Add per-call headers to the request builder.
+     * - Headers are never stored on the instance to prevent concurrency issues.
+     * ------------------------------------------------------------------------
+     * @param builder The request builder to add headers to.
+     * @param headers The headers map, or null.
      */
     private static void applyHeaders(Request.Builder builder, @Nullable Map<String, String> headers) {
         if (headers != null) {
@@ -150,13 +142,12 @@ public class HttpClient {
      * ************************************************************************
      * get()
      * ************************************************************************
-     * - GET Request with Callback.
-     * - This method enqueues the request in Background Thread,
-     *   You can safely call it from UI Thread.
-     * - Be aware that ICallback is invoked in Background Thread.
+     * - Perform a GET request asynchronously with callback.
+     * - Safe to call from UI Thread (enqueued in background thread).
+     * - ICallback is invoked in the background thread.
      * ------------------------------------------------------------------------
      * @param url       Target endpoint.
-     * @param ICallback Result ICallback.
+     * @param ICallback Result callback.
      */
     public void get(String url, ICallback ICallback) {
         get(url, null, null, ICallback);
@@ -166,9 +157,11 @@ public class HttpClient {
      * ************************************************************************
      * get() with per-call headers
      * ************************************************************************
+     * - Perform a GET request with custom headers.
+     * ------------------------------------------------------------------------
      * @param url       Target endpoint.
-     * @param headers   Request headers for this call only (e.g. x-api-key), or null.
-     * @param ICallback Result ICallback.
+     * @param headers   Request headers for this call only (e.g., x-api-key), or null.
+     * @param ICallback Result callback.
      */
     public void get(String url, @Nullable Map<String, String> headers, ICallback ICallback) {
         get(url, headers, null, ICallback);
@@ -178,10 +171,12 @@ public class HttpClient {
      * ************************************************************************
      * get() with per-call headers and request ID
      * ************************************************************************
+     * - Perform a GET request with custom headers and request ID.
+     * ------------------------------------------------------------------------
      * @param url       Target endpoint.
-     * @param headers   Request headers for this call only (e.g. x-api-key), or null.
-     * @param requestId Unique ID to tag this request, allowing targeted cancellation later. Can be null.
-     * @param ICallback Result ICallback.
+     * @param headers   Request headers for this call only (e.g., x-api-key), or null.
+     * @param requestId Unique ID to tag this request for targeted cancellation. Can be null.
+     * @param ICallback Result callback.
      */
     public void get(String url, @Nullable Map<String, String> headers, @Nullable String requestId, ICallback ICallback) {
         Request.Builder builder = new Request.Builder().url(url);
@@ -195,38 +190,46 @@ public class HttpClient {
     }
 
     /**
-     * ****************************************************************************
-     *  Get (Async)
-     * ****************************************************************************
-     * - This method enqueues the request in Background Thread,
-     *   You can safely call it from UI Thread.
-     * - It returns Call object, you can use it for example to cancel the request
+     * ************************************************************************
+     * getAsync()
+     * ************************************************************************
+     * - Perform a GET request asynchronously with an OkHttp Callback.
+     * - Safe to call from UI Thread. Returns a Call object for cancellation.
+     * ------------------------------------------------------------------------
      * @param url      The URL to request.
-     * @param callback The OkHttp Callback to handle response.
-     * @return The OkHttp Call object, which can be used to cancel this specific call.
+     * @param callback The OkHttp Callback to handle the response.
+     * @return The OkHttp Call object (can be used to cancel this request).
      */
     public Call getAsync(String url, okhttp3.Callback callback) {
         return getAsync(url, null, null, callback);
     }
 
     /**
-     * Get (Async) with per-call headers
+     * ************************************************************************
+     * getAsync() with per-call headers
+     * ************************************************************************
+     * - Perform a GET request asynchronously with custom headers.
+     * ------------------------------------------------------------------------
      * @param url      The URL to request.
      * @param headers  Request headers for this call only, or null.
-     * @param callback The OkHttp Callback to handle response.
-     * @return The OkHttp Call object, which can be used to cancel this specific call.
+     * @param callback The OkHttp Callback to handle the response.
+     * @return The OkHttp Call object (can be used to cancel this request).
      */
     public Call getAsync(String url, @Nullable Map<String, String> headers, okhttp3.Callback callback) {
         return getAsync(url, headers, null, callback);
     }
 
     /**
-     * Get (Async) with per-call headers and request ID
+     * ************************************************************************
+     * getAsync() with per-call headers and request ID
+     * ************************************************************************
+     * - Perform a GET request asynchronously with custom headers and request ID.
+     * ------------------------------------------------------------------------
      * @param url       The URL to request.
      * @param headers   Request headers for this call only, or null.
-     * @param requestId Unique ID to tag this request, allowing targeted cancellation later. Can be null.
-     * @param callback  The OkHttp Callback to handle response.
-     * @return The OkHttp Call object, which can be used to cancel this specific call.
+     * @param requestId Unique ID to tag for targeted cancellation. Can be null.
+     * @param callback  The OkHttp Callback to handle the response.
+     * @return The OkHttp Call object (can be used to cancel this request).
      */
     public Call getAsync(String url, @Nullable Map<String, String> headers, @Nullable String requestId, okhttp3.Callback callback) {
         OkHttpClient client = getClient(); // Throws if not initialized
@@ -242,17 +245,14 @@ public class HttpClient {
     }
 
     /**
-     * ********************************************************************************
-     *  Get (Sync)
-     * ********************************************************************************
-     * - Perform GET request synchronously. (blocking operation)
-     * - Do not perform this method on UI Thread.
-     * - You must handle background thread by yourself.
-     * - This returns Response, which is used to read the response body and headers.
-     * - You must close the Response body after reading it to avoid resource leaks.
+     * ************************************************************************
+     * getSync()
+     * ************************************************************************
+     * - Perform a GET request synchronously (blocking).
+     * - Do NOT call this on the UI Thread. You must handle threading yourself.
      * ------------------------------------------------------------------------
      * @param url The URL to request.
-     * @return Response Object.
+     * @return The OkHttp Response object.
      * @throws IOException if a network error occurs.
      */
     public Response getSync(String url) throws IOException {
@@ -260,10 +260,14 @@ public class HttpClient {
     }
 
     /**
-     * Get (Sync) with per-call headers
+     * ************************************************************************
+     * getSync() with per-call headers
+     * ************************************************************************
+     * - Perform a synchronous GET request with custom headers.
+     * ------------------------------------------------------------------------
      * @param url     The URL to request.
      * @param headers Request headers for this call only, or null.
-     * @return Response Object.
+     * @return The OkHttp Response object.
      * @throws IOException if a network error occurs.
      */
     public Response getSync(String url, @Nullable Map<String, String> headers) throws IOException {
@@ -271,11 +275,15 @@ public class HttpClient {
     }
 
     /**
-     * Get (Sync) with per-call headers and request ID
+     * ************************************************************************
+     * getSync() with per-call headers and request ID
+     * ************************************************************************
+     * - Perform a synchronous GET request with custom headers and request ID.
+     * ------------------------------------------------------------------------
      * @param url       The URL to request.
      * @param headers   Request headers for this call only, or null.
-     * @param requestId Unique ID to tag this request, allowing targeted cancellation later. Can be null.
-     * @return Response Object.
+     * @param requestId Unique ID to tag for targeted cancellation. Can be null.
+     * @return The OkHttp Response object.
      * @throws IOException if a network error occurs.
      */
     public Response getSync(String url, @Nullable Map<String, String> headers, @Nullable String requestId) throws IOException {
@@ -292,42 +300,49 @@ public class HttpClient {
     /////////////////////////// POST Methods ////////////////////////////////////
 
     /**
-     * ****************************************************************************
-     *  Post Json (Async)
-     * ****************************************************************************
-     * - Performs a POST request with a JSON body asynchronously (non-blocking).
-     * - This method is executed on background thread.
-     * - So you don't need to use background thread by yourself.
+     * ************************************************************************
+     * postJson()
+     * ************************************************************************
+     * - Perform a POST request with a JSON body asynchronously.
+     * - The request is executed on a background thread.
      * ------------------------------------------------------------------------
      * @param url      The URL to request.
-     * @param jsonBody The JSON string to send as body.
-     * @param callback The OkHttp Callback to handle response.
-     * @return The OkHttp Call object, which can be used to cancel this specific call.
+     * @param jsonBody The JSON string to send as the request body.
+     * @param callback The OkHttp Callback to handle the response.
+     * @return The OkHttp Call object (can be used to cancel this request).
      */
     public Call postJson(String url, String jsonBody, okhttp3.Callback callback) {
         return postJson(url, null, null, jsonBody, callback);
     }
 
     /**
-     * Post Json (Async) with per-call headers
+     * ************************************************************************
+     * postJson() with per-call headers
+     * ************************************************************************
+     * - Perform a POST request with JSON body and custom headers.
+     * ------------------------------------------------------------------------
      * @param url      The URL to request.
      * @param headers  Request headers for this call only, or null.
-     * @param jsonBody The JSON string to send as body.
-     * @param callback The OkHttp Callback to handle response.
-     * @return The OkHttp Call object, which can be used to cancel this specific call.
+     * @param jsonBody The JSON string to send as the request body.
+     * @param callback The OkHttp Callback to handle the response.
+     * @return The OkHttp Call object (can be used to cancel this request).
      */
     public Call postJson(String url, @Nullable Map<String, String> headers, String jsonBody, okhttp3.Callback callback) {
         return postJson(url, headers, null, jsonBody, callback);
     }
 
     /**
-     * Post Json (Async) with per-call headers and request ID
+     * ************************************************************************
+     * postJson() with per-call headers and request ID
+     * ************************************************************************
+     * - Perform a POST request with JSON body, custom headers, and request ID.
+     * ------------------------------------------------------------------------
      * @param url       The URL to request.
      * @param headers   Request headers for this call only, or null.
-     * @param requestId Unique ID to tag this request, allowing targeted cancellation later. Can be null.
-     * @param jsonBody  The JSON string to send as body.
-     * @param callback  The OkHttp Callback to handle response.
-     * @return The OkHttp Call object, which can be used to cancel this specific call.
+     * @param requestId Unique ID to tag for targeted cancellation. Can be null.
+     * @param jsonBody  The JSON string to send as the request body.
+     * @param callback  The OkHttp Callback to handle the response.
+     * @return The OkHttp Call object (can be used to cancel this request).
      */
     public Call postJson(String url, @Nullable Map<String, String> headers, @Nullable String requestId, String jsonBody, okhttp3.Callback callback) {
         OkHttpClient client = getClient(); // Throws if not initialized
@@ -345,29 +360,31 @@ public class HttpClient {
     }
 
     /**
-     * ********************************************************************************
-     *  Post Json (Sync)
-     * ********************************************************************************
-     * - Perform Post request synchronously. (blocking operation)
-     * - Warning: Do not perform this method on UI Thread.
-     * - You must handle background thread by yourself.
+     * ************************************************************************
+     * postJsonSync()
+     * ************************************************************************
+     * - Perform a POST request with a JSON body synchronously (blocking).
+     * - Do NOT call this on the UI Thread.
      * ------------------------------------------------------------------------
      * @param url      The URL to request.
-     * @param jsonBody The JSON string to send as body.
-     * @return The OkHttp Response.
+     * @param jsonBody The JSON string to send as the request body.
+     * @return The OkHttp Response object.
      * @throws IOException if a network error occurs.
-     * @throws IllegalStateException if OkHttpClient is not initialized.
      */
     public Response postJsonSync(String url, String jsonBody) throws IOException {
         return postJsonSync(url, null, null, jsonBody);
     }
 
     /**
-     * Post Json (Sync) with per-call headers
+     * ************************************************************************
+     * postJsonSync() with per-call headers
+     * ************************************************************************
+     * - Perform a synchronous POST request with JSON body and custom headers.
+     * ------------------------------------------------------------------------
      * @param url      The URL to request.
      * @param headers  Request headers for this call only, or null.
-     * @param jsonBody The JSON string to send as body.
-     * @return The OkHttp Response.
+     * @param jsonBody The JSON string to send as the request body.
+     * @return The OkHttp Response object.
      * @throws IOException if a network error occurs.
      */
     public Response postJsonSync(String url, @Nullable Map<String, String> headers, String jsonBody) throws IOException {
@@ -375,12 +392,17 @@ public class HttpClient {
     }
 
     /**
-     * Post Json (Sync) with per-call headers and request ID
+     * ************************************************************************
+     * postJsonSync() with per-call headers and request ID
+     * ************************************************************************
+     * - Perform a synchronous POST request with JSON body, custom headers,
+     *   and request ID.
+     * ------------------------------------------------------------------------
      * @param url       The URL to request.
      * @param headers   Request headers for this call only, or null.
-     * @param requestId Unique ID to tag this request, allowing targeted cancellation later. Can be null.
-     * @param jsonBody  The JSON string to send as body.
-     * @return The OkHttp Response.
+     * @param requestId Unique ID to tag for targeted cancellation. Can be null.
+     * @param jsonBody  The JSON string to send as the request body.
+     * @return The OkHttp Response object.
      * @throws IOException if a network error occurs.
      */
     public Response postJsonSync(String url, @Nullable Map<String, String> headers, @Nullable String requestId, String jsonBody) throws IOException {
@@ -398,15 +420,12 @@ public class HttpClient {
     ///////////////////////////// Utility Methods //////////////////////////////////
 
     /**
-     * ***************************************************************************
-     *  Cancel Request by ID
-     * ***************************************************************************
-     * - Cancels any currently running or queued HTTP request that was tagged
-     *   with the specified requestId.
-     * - This is useful for stopping a specific network activity (e.g., when
-     *   an Activity/Fragment is destroyed, or a user cancels an action).
+     * ************************************************************************
+     * cancelRequestById()
+     * ************************************************************************
+     * - Cancel any running or queued HTTP request tagged with the specified ID.
      * ------------------------------------------------------------------------
-     * @param requestId The unique ID assigned to the request(s) to be canceled.
+     * @param requestId The unique ID of the request(s) to cancel.
      */
     public void cancelRequestById(@Nullable String requestId) {
         if (okHttpClient == null || requestId == null) {
@@ -437,14 +456,11 @@ public class HttpClient {
     }
 
     /**
-     * ***************************************************************************
-     *  Cancel All Running Requests
-     * ***************************************************************************
-     * - Cancels all currently running and queued HTTP requests.
-     * - This is useful for stopping all network activity, (i.e activity destroyed)
-     * - Note: In-flight requests may still complete their network portion
-     *  but their callbacks will not be executed
-     *  if the thread executing them is interrupted.
+     * ************************************************************************
+     * cancelAllRequests()
+     * ************************************************************************
+     * - Cancel all running and queued HTTP requests.
+     * - Useful when an Activity is destroyed.
      */
     public void cancelAllRequests() {
         if (okHttpClient != null) {
@@ -456,10 +472,12 @@ public class HttpClient {
     }
 
     /**
-     * ***************************************************************************
-     *  Count Running Requests
-     * ***************************************************************************
-     * - Count any HTTP requests currently running.
+     * ************************************************************************
+     * countRunningRequests()
+     * ************************************************************************
+     * - Count the number of HTTP requests currently running.
+     * ------------------------------------------------------------------------
+     * @return The number of running requests.
      */
     public int countRunningRequests() {
         if (okHttpClient != null) {
@@ -469,10 +487,12 @@ public class HttpClient {
     }
 
     /**
-     * ***************************************************************************
-     *  Count Queued Requests
-     * ***************************************************************************
-     * - Count queued HTTP requests (waiting to be executed).
+     * ************************************************************************
+     * countQueuedRequests()
+     * ************************************************************************
+     * - Count the number of queued HTTP requests (waiting to be executed).
+     * ------------------------------------------------------------------------
+     * @return The number of queued requests.
      */
     public int countQueuedRequests() {
         if (okHttpClient != null) {
@@ -482,10 +502,12 @@ public class HttpClient {
     }
 
     /**
-     * ***************************************************************************
-     *  Count Pending Requests (running & queued)
-     * ***************************************************************************
-     * - Count pending HTTP requests (running and queued).
+     * ************************************************************************
+     * countPendingRequests()
+     * ************************************************************************
+     * - Count the total pending HTTP requests (running + queued).
+     * ------------------------------------------------------------------------
+     * @return The number of pending requests.
      */
     public int countPendingRequests() {
         if (okHttpClient != null) {
@@ -495,16 +517,15 @@ public class HttpClient {
     }
 
     /**
-     * ***********************************************************************
-     *  Shutdown Client
-     * ***********************************************************************
-     * - Shuts down the OkHttpClient's internal thread pools and connection pool.
-     * - This should typically only be called when the application process is ending
-     * - or if you truly need to de-initialize the SDK completely and are sure
-     * - no more network requests will be made.
-     * - Calling this prematurely can lead to `RejectedExecutionException` for subsequent requests.
-     * --
-     * - For most ad SDKs, the HttpClient lives for the lifetime of the app.
+     * ************************************************************************
+     * shutdown()
+     * ************************************************************************
+     * - Shut down the OkHttpClient's thread pools and connection pool.
+     * - Should only be called when the application process is ending.
+     * - Calling this prematurely may cause RejectedExecutionException for
+     *   subsequent requests.
+     * ------------------------------------------------------------------------
+     * @apiNote For most SDKs, the HttpClient lives for the lifetime of the app.
      */
     public void shutdown() {
         if (okHttpClient != null) {
@@ -522,11 +543,11 @@ public class HttpClient {
      * ************************************************************************
      * enqueue()
      * ************************************************************************
-     * - Shared executor for GET/POST: runs the call async and routes the
-     *   response body (or transport error) into the ICallback.
+     * - Execute an HTTP request asynchronously and route the response to the
+     *   provided ICallback.
      * ------------------------------------------------------------------------
-     * @param request   Prepared OkHttp request.
-     * @param ICallback Result ICallback.
+     * @param request   The prepared OkHttp request.
+     * @param ICallback The callback to handle the response or error.
      */
     private void enqueue(Request request, ICallback ICallback) {
         okHttpClient.newCall(request).enqueue(new okhttp3.Callback() {

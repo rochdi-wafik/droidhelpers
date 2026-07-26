@@ -32,8 +32,9 @@ import java.security.spec.X509EncodedKeySpec;
  * ************************************************************************
  * CryptoUtil
  * ************************************************************************
- * - Methods for encryption and decryption
- * // TODO: 7/24/2026 Maybe we need to change the class name?
+ * - Methods for encryption, decryption, and cryptographic operations.
+ * ------------------------------------------------------------------------
+ * @todo Maybe need to change the class name.
  */
 public class CryptoUtil {
     private static final String TAG = "__StringCrypto";
@@ -48,8 +49,14 @@ public class CryptoUtil {
     private static final int GCM_TAG_LENGTH = 128;
 
     /**
-     * Helper to derive a robust 256-bit key from any given string.
-     * Replaces the vulnerable 16-byte array truncation.
+     * ************************************************************************
+     * deriveKey()
+     * ************************************************************************
+     * - Derive a robust 256-bit AES key from any given string using SHA-256.
+     * ------------------------------------------------------------------------
+     * @param key The input string to derive the key from.
+     * @return A SecretKeySpec for AES encryption.
+     * @throws NoSuchAlgorithmException if SHA-256 is not available.
      */
     private static SecretKeySpec deriveKey(String key) throws NoSuchAlgorithmException {
         // Hashing the string ensures we always get a valid 32-byte (256-bit) key,
@@ -61,12 +68,14 @@ public class CryptoUtil {
     }
 
     /**
-     * ----------------------------------------------------------------------------
-     * Cipher Encrypt (Bytes)
-     * ----------------------------------------------------------------------------
-     * @param plainBytes bytes data to be encrypted
-     * @param key key used for encryption
-     * @return byte array containing [IV (12 bytes)] + [Ciphertext]
+     * ************************************************************************
+     * cipherEncrypt() (Bytes)
+     * ************************************************************************
+     * - Encrypt byte data using AES/GCM/NoPadding.
+     * ------------------------------------------------------------------------
+     * @param plainBytes Bytes data to be encrypted.
+     * @param key        The encryption key.
+     * @return Byte array containing [IV (12 bytes)] + [Ciphertext].
      */
     public static byte[] cipherEncrypt(byte[] plainBytes, final String key) {
         try {
@@ -97,12 +106,14 @@ public class CryptoUtil {
     }
 
     /**
-     * ----------------------------------------------------------------------------
-     * Cipher Decrypt (Bytes)
-     * ---------------------------------------------------------------------------
-     * @param cipherBytes byte array containing [IV (12 bytes)] + [Ciphertext]
-     * @param key must be the same key used for encryption
-     * @return decrypted data
+     * ************************************************************************
+     * cipherDecrypt() (Bytes)
+     * ************************************************************************
+     * - Decrypt byte data that was encrypted with cipherEncrypt().
+     * ------------------------------------------------------------------------
+     * @param cipherBytes Byte array containing [IV (12 bytes)] + [Ciphertext].
+     * @param key         Must be the same key used for encryption.
+     * @return Decrypted data.
      */
     public static byte[] cipherDecrypt(byte[] cipherBytes, final String key) {
         try {
@@ -128,12 +139,14 @@ public class CryptoUtil {
     }
 
     /**
-     * ----------------------------------------------------------------------------
-     * Cipher Encrypt (String)
-     * ----------------------------------------------------------------------------
-     * @param plainText String data to be encrypted
-     * @param key key used for encryption
-     * @return Base64 string of the IV + Ciphertext
+     * ************************************************************************
+     * cipherEncrypt() (String)
+     * ************************************************************************
+     * - Encrypt a string using AES/GCM/NoPadding and return Base64.
+     * ------------------------------------------------------------------------
+     * @param plainText String data to be encrypted.
+     * @param key       The encryption key.
+     * @return Base64 string of the IV + Ciphertext.
      */
     public static String cipherEncrypt(String plainText, final String key) {
         try {
@@ -148,12 +161,14 @@ public class CryptoUtil {
     }
 
     /**
-     * ----------------------------------------------------------------------------
-     * Cipher Decrypt (String)
-     * ----------------------------------------------------------------------------
-     * @param encryptedText Base64 string containing IV + Ciphertext
-     * @param key must be the same key used for encryption
-     * @return decrypted String data
+     * ************************************************************************
+     * cipherDecrypt() (String)
+     * ************************************************************************
+     * - Decrypt a Base64 string that was encrypted with cipherEncrypt().
+     * ------------------------------------------------------------------------
+     * @param encryptedText Base64 string containing IV + Ciphertext.
+     * @param key           Must be the same key used for encryption.
+     * @return Decrypted string data.
      */
     public static String cipherDecrypt(String encryptedText, final String key) {
         try {
@@ -169,14 +184,16 @@ public class CryptoUtil {
     }
 
     /**
-     * --------------------------------------------------------------
-     * XOR Encrypt
-     * --------------------------------------------------------------
-     * ⚠️ WARNING: THIS IS NOT ENCRYPTION. THIS IS OBFUSCATION ONLY. ⚠️
-     * XOR is trivially reversible via known-plaintext attacks and
-     * provides ZERO cryptographic security. Do NOT use this for sensitive
-     * data, passwords, or secure communications.
-     * --------------------------------------------------------------
+     * ************************************************************************
+     * xorEncrypt()
+     * ************************************************************************
+     * - XOR-based obfuscation of data.
+     * - WARNING: OBFUSCATION ONLY, NOT CRYPTOGRAPHICALLY SECURE.
+     * - XOR is trivially reversible. Do NOT use for sensitive data.
+     * ------------------------------------------------------------------------
+     * @param data      The data to obfuscate.
+     * @param secretKey The secret key for XOR operation.
+     * @return Base64-encoded obfuscated string.
      */
     public static String xorEncrypt(String data, String secretKey) {
         if (data == null) {
@@ -195,11 +212,15 @@ public class CryptoUtil {
     }
 
     /**
-     * --------------------------------------------------------------
-     * XOR Decrypt
-     * --------------------------------------------------------------
-     * ⚠️ WARNING: OBFUSCATION ONLY. NOT CRYPTOGRAPHICALLY SECURE. ⚠️
-     * --------------------------------------------------------------
+     * ************************************************************************
+     * xorDecrypt()
+     * ************************************************************************
+     * - Reverse XOR obfuscation to retrieve original data.
+     * - WARNING: OBFUSCATION ONLY, NOT CRYPTOGRAPHICALLY SECURE.
+     * ------------------------------------------------------------------------
+     * @param data      The Base64-encoded obfuscated data.
+     * @param secretKey The secret key used for obfuscation.
+     * @return The deobfuscated string.
      */
     public static String xorDecrypt(String data, String secretKey) {
         if (data == null) {
@@ -220,11 +241,15 @@ public class CryptoUtil {
     }
 
     /**
-     * --------------------------------------------------------------
-     * XOR Encrypt Decrypt
-     * --------------------------------------------------------------
-     * ⚠️ WARNING: OBFUSCATION ONLY. NOT CRYPTOGRAPHICALLY SECURE. ⚠️
-     * --------------------------------------------------------------
+     * ************************************************************************
+     * xorEncryptDecrypt()
+     * ************************************************************************
+     * - XOR obfuscation/deobfuscation (reversible with same key).
+     * - WARNING: OBFUSCATION ONLY, NOT CRYPTOGRAPHICALLY SECURE.
+     * ------------------------------------------------------------------------
+     * @param data      The data to obfuscate or deobfuscate.
+     * @param secretKey The secret key for XOR operation.
+     * @return The result of XOR operation.
      */
     public static String xorEncryptDecrypt(String data, String secretKey) {
         if (data == null) {
@@ -243,11 +268,15 @@ public class CryptoUtil {
     }
 
     /**
-     * ****************************************************************
-     * Verify RSA Signature
-     * ****************************************************************
-     * - This replaces HMAC verification with RSA signature verification for better security.
-     * - This method verifies the RSA signature of the given data using the provided public key.
+     * ************************************************************************
+     * verifyRSASignature()
+     * ************************************************************************
+     * - Verify an RSA signature of the given data using the provided public key.
+     * ------------------------------------------------------------------------
+     * @param rawResponseData The raw response data bytes.
+     * @param signatureBase64 The Base64-encoded signature.
+     * @param publicKeyBase64 The Base64-encoded RSA public key.
+     * @return true if the signature is valid, false otherwise.
      */
     public static boolean verifyRSASignature(byte[] rawResponseData, String signatureBase64, String publicKeyBase64) {
         try {
@@ -271,15 +300,15 @@ public class CryptoUtil {
     }
 
     /**
-     * ****************************************************************
-     * Get or Create Master Key Alias
-     * ****************************************************************
-     * - This method checks if a master key alias exists in the Android Keystore.
-     * - If it doesn't exist, it creates a new AES key with the specified parameters.
-     * - Returns the alias of the master key.
+     * ************************************************************************
+     * getOrCreateMasterKeyAlias()
+     * ************************************************************************
+     * - Check if a master key alias exists in the Android Keystore.
+     * - If not, create a new AES key with the specified parameters.
+     * ------------------------------------------------------------------------
      * @return The alias of the master key in the Android Keystore.
-     * @throws GeneralSecurityException
-     * @throws IOException
+     * @throws GeneralSecurityException If a security error occurs.
+     * @throws IOException              If an I/O error occurs.
      */
     public static String getOrCreateMasterKeyAlias() throws GeneralSecurityException, IOException {
         final String alias = "_androidx_security_master_key_";

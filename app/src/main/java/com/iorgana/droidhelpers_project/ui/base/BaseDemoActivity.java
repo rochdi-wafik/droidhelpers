@@ -172,29 +172,31 @@ public abstract class BaseDemoActivity extends AppCompatActivity {
         row.setLayoutParams(rowParams);
 
         TextView label = new TextView(this);
-        label.setText(methodLabel);
-        label.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13);
-        label.setTypeface(android.graphics.Typeface.MONOSPACE);
+        label.setText(com.iorgana.droidhelpers_project.util.CodeHighlighter.highlightJavaSignature(this, methodLabel));
+        styleAsCode(label);
         LinearLayout.LayoutParams labelParams = new LinearLayout.LayoutParams(
                 0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f);
+        labelParams.rightMargin = dp(8);
         label.setLayoutParams(labelParams);
 
-        MaterialButton button = new MaterialButton(this, null,
-                com.google.android.material.R.attr.materialButtonOutlinedStyle);
+        MaterialButton button = new MaterialButton(this);
         button.setText("Run");
         button.setTextSize(TypedValue.COMPLEX_UNIT_SP, 12);
         button.setInsetTop(0);
         button.setInsetBottom(0);
+        button.setBackgroundTintList(android.content.res.ColorStateList.valueOf(
+                androidx.core.content.ContextCompat.getColor(this, com.iorgana.droidhelpers_project.R.color.google_blue)));
+        button.setTextColor(androidx.core.content.ContextCompat.getColor(this, com.iorgana.droidhelpers_project.R.color.white));
 
         row.addView(label);
         row.addView(button);
         section.addView(row);
 
-        TextView output = new TextView(this);
-        output.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13);
-        output.setPadding(0, dp(4), 0, 0);
+        TextView output = new com.iorgana.droidhelpers_project.util.CodeTextView(this);
+        styleAsCode(output);
         LinearLayout.LayoutParams outParams = new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        outParams.topMargin = dp(6);
         outParams.bottomMargin = dp(4);
         output.setLayoutParams(outParams);
         section.addView(output);
@@ -214,6 +216,21 @@ public abstract class BaseDemoActivity extends AppCompatActivity {
                 row.output.setText("Error: " + e.getMessage());
             }
         });
+    }
+
+    /**
+     * Applies the shared "code block" look (monospace font, code-tinted
+     * text color, padded rounded background) to a method-signature label
+     * or a live output line, so both read as code instead of plain body
+     * text. Day/night colors come from {@code @color/code_block_*}.
+     */
+    protected void styleAsCode(TextView view) {
+        view.setTypeface(android.graphics.Typeface.MONOSPACE);
+        view.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13);
+        view.setTextColor(androidx.core.content.ContextCompat.getColor(this, com.iorgana.droidhelpers_project.R.color.code_block_text));
+        view.setBackgroundResource(com.iorgana.droidhelpers_project.R.drawable.bg_code_block);
+        int hPad = dp(10), vPad = dp(8);
+        view.setPadding(hPad, vPad, hPad, vPad);
     }
 
     protected void toast(String msg) {

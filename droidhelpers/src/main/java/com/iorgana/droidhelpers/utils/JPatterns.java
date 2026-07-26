@@ -1,6 +1,14 @@
 package com.iorgana.droidhelpers.utils;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+/**
+ * ************************************************************************
+ * JPatterns
+ * ************************************************************************
+ * - A collection of regular expression patterns for common data formats
+ *   including IP addresses, domain names, URLs, email addresses, and phone
+ *   numbers. Based on Android's Patterns class with custom extensions.
+ */
 public class JPatterns {
     /**
      *  Regular expression to match all IANA top-level domains.
@@ -410,14 +418,14 @@ public class JPatterns {
                     + "(\\([0-9]+\\)[\\- \\.]*)?"   // (<digits>)<sdd>*
                     + "([0-9][0-9\\- \\.]+[0-9])"); // <digit><digit|sdd>+<digit>
     /**
-     *  Convenience method to take all of the non-null matching groups in a
-     *  regex Matcher and return them as a concatenated string.
-     *
-     *  @param matcher      The Matcher object from which grouped text will
-     *                      be extracted
-     *
-     *  @return             A String comprising all of the non-null matched
-     *                      groups concatenated together
+     * ************************************************************************
+     * concatGroups()
+     * ************************************************************************
+     * - Concatenate all non-null matching groups from a Matcher into a single
+     *   string.
+     * ------------------------------------------------------------------------
+     * @param matcher The Matcher object to extract groups from.
+     * @return A string of all non-null matched groups concatenated together.
      */
     public static final String concatGroups(Matcher matcher) {
         StringBuilder b = new StringBuilder();
@@ -431,14 +439,13 @@ public class JPatterns {
         return b.toString();
     }
     /**
-     * Convenience method to return only the digits and plus signs
-     * in the matching string.
-     *
-     * @param matcher      The Matcher object from which digits and plus will
-     *                     be extracted
-     *
-     * @return             A String comprising all of the digits and plus in
-     *                     the match
+     * ************************************************************************
+     * digitsAndPlusOnly()
+     * ************************************************************************
+     * - Extract only digits and plus signs from the matched string.
+     * ------------------------------------------------------------------------
+     * @param matcher The Matcher object to extract from.
+     * @return A string containing only digits and plus signs from the match.
      */
     public static final String digitsAndPlusOnly(Matcher matcher) {
         StringBuilder buffer = new StringBuilder();
@@ -453,27 +460,29 @@ public class JPatterns {
     }
 
     /**
-     * Do not create this static utility class.
+     * ************************************************************************
+     * JPatterns (Private Constructor)
+     * ************************************************************************
+     * - Private constructor to prevent instantiation of this utility class.
      */
     private JPatterns() {}
 
 
-    /*----------------------------------- Custom JPatterns ------------------------------------------*/
+    /*==============================[ Custom JPatterns ]==============================*/
 
     /**
-     * Protocol : support any protocol
+     * Protocol: support any protocol.
      */
     public static final String _PROTOCOL = "(?i:[a-z]+)://";
     /**
-     * Domain Name: support port number
+     * Domain Name: support port number.
      * @add-on 16-1-2023
-     * -----------------------------------------------------------------------------
      */
     public static final String _PORT_NUMBER = "\\:\\d{1,5}";
     public static final String _DOMAIN_NAME_STR = "(" + HOST_NAME + "(?:" + PORT_NUMBER + ")?" + "|" + IP_ADDRESS_STRING + "(?:" + PORT_NUMBER + ")?" + ")" ;
     public static final Pattern _DOMAIN_WITH_PORT = Pattern.compile(_DOMAIN_NAME_STR);
     /**
-     * IP Address: support port number
+     * IP Address: support port number.
      */
     public static final String IP_ADDRESS_STRING_WITH_PORT =
             "((25[0-5]|2[0-4][0-9]|[0-1][0-9]{2}|[1-9][0-9]|[1-9])\\.(25[0-5]|2[0-4]"

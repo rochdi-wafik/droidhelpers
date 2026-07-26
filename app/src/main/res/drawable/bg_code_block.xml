@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Background for method-signature labels and JSON/response output in the demo
+  screens (see BaseDemoActivity#styleAsCode). Colors are resolved per
+  values/colors.xml (light) and values-night/colors.xml (dark) so this single
+  drawable adapts automatically with the system theme.
+-->
+<shape xmlns:android="http://schemas.android.com/apk/res/android">
+    <solid android:color="@color/code_block_bg" />
+    <stroke
+        android:width="1dp"
+        android:color="@color/code_block_border" />
+    <corners android:radius="8dp" />
+</shape>

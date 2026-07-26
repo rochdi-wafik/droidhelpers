@@ -13,6 +13,7 @@ dependencyResolutionManagement {
         maven { url "https://maven.google.com"}
 
         // Add Library Repository  Github Packages
+        /* We don't use Github Packages now, GitPack.io is used instead
         maven {
             url = uri("https://maven.pkg.github.com/rochdi-wafik/droidhelpers")
             credentials {
@@ -20,6 +21,7 @@ dependencyResolutionManagement {
                 password = gp_key
             }
         }
+         */
     }
 }
 

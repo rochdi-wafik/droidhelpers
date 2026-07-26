@@ -23,14 +23,22 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.regex.Matcher;
 
+/**
+ * ************************************************************************
+ * AddressHelper
+ * ************************************************************************
+ * Helper methods for IP address and network address operations.
+ */
 public class AddressHelper {
 
     /**
-     * Get IP Address Of Device
-     * ---------------------------------------------------------------------------------
-     * This method return the local (private) ip address of this device
-     * IF useIPv6 = true: return ip version 6
-     * IF useIPv6 = false or null: return ip version 4
+     * ************************************************************************
+     * getIPAddress()
+     * ************************************************************************
+     * - Get the local (private) IP address of the device.
+     * ------------------------------------------------------------------------
+     * @param useIPv6 If true, returns IPv6 address; otherwise returns IPv4.
+     * @return The IP address string, or empty string if not found.
      */
     public static String getIPAddress(Boolean useIPv6) {
         try {
@@ -66,15 +74,16 @@ public class AddressHelper {
 
 
     /**
-     * Generate Unique IP Address
-     * ---------------------------------------------------------------------
-     * - The output IP is a local IP (private)
-     * - The generated IP is not used in the passed List of IPs
-     * - The output IP contains two parts:
-     * - Network Address: "192.168" which is not changed
-     * - Host Address: which is changed
-     * - This method will generate a random Host Address, and keeping the Network Address
-     * - Example: "192.168.10.1"
+     * ************************************************************************
+     * generateRandomIP()
+     * ************************************************************************
+     * - Generate a random local (private) IP address.
+     * - Keeps the network address and generates a random host address.
+     * - Ensures the generated IP is not in the excluded list.
+     * ------------------------------------------------------------------------
+     * @param networkHost The network prefix (e.g., "192.168"), or null for default.
+     * @param excludedIPs List of IPs to exclude.
+     * @return A unique random IP address string.
      */
     public static String generateRandomIP(String networkHost, List<String> excludedIPs){
         // Generate New IP while its exists in the List, until found a unique IP
@@ -94,7 +103,13 @@ public class AddressHelper {
     }
 
     /**
-     * Get A List Of Taken IP Addresses
+     * ************************************************************************
+     * getTakenIPs()
+     * ************************************************************************
+     * - Get a list of all IP addresses assigned to the device's network
+     *   interfaces.
+     * ------------------------------------------------------------------------
+     * @return List of IP address strings.
      */
     public static List<String> getTakenIPs(){
         List<String> takenIp = new ArrayList<>();
@@ -121,9 +136,13 @@ public class AddressHelper {
     }
 
     /**
-     * Is IP
-     * @param ip:
-     * @return boolean
+     * ************************************************************************
+     * isIp()
+     * ************************************************************************
+     * - Check if a string is a valid IP address.
+     * ------------------------------------------------------------------------
+     * @param ip The string to check.
+     * @return true if valid IP, false otherwise.
      */
     public static boolean isIp(String ip){
         return JPatterns.IP_ADDRESS.matcher(ip).matches();
@@ -131,23 +150,39 @@ public class AddressHelper {
 
 
     /**
-     * Is Domain
-     * @param domain:
-     * @return boolean
+     * ************************************************************************
+     * isDomain()
+     * ************************************************************************
+     * - Check if a string is a valid domain name.
+     * ------------------------------------------------------------------------
+     * @param domain The string to check.
+     * @return true if valid domain, false otherwise.
      */
     public static boolean isDomain(String domain){
         return JPatterns.DOMAIN_NAME.matcher(domain).matches();
     }
 
-    // Is WebUrl
+    /**
+     * ************************************************************************
+     * isWebUrl()
+     * ************************************************************************
+     * - Check if a string is a valid web URL.
+     * ------------------------------------------------------------------------
+     * @param url The string to check.
+     * @return true if valid web URL, false otherwise.
+     */
     public static boolean isWebUrl(String url){
         return JPatterns.WEB_URL.matcher(url).matches();
     }
 
     /**
-     * Is CIDR
-     * ------------------------------------------------------------------
-     * cidr represent a network route, like this: 0.0.0.0/0
+     * ************************************************************************
+     * isValidCidr()
+     * ************************************************************************
+     * - Check if a string is a valid CIDR notation (e.g., "0.0.0.0/0").
+     * ------------------------------------------------------------------------
+     * @param cidr The CIDR string to check.
+     * @return true if valid CIDR, false otherwise.
      */
     public static boolean isValidCidr(String cidr) {
         String pattern = "^([0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3})/(\\d{1,2})$";
@@ -155,8 +190,14 @@ public class AddressHelper {
     }
 
     /**
-     * Is IP Reachable
-     * -------------------------------------------------------------------
+     * ************************************************************************
+     * isIpReachable()
+     * ************************************************************************
+     * - Check if an IP address is reachable via socket connection on port 53.
+     * ------------------------------------------------------------------------
+     * @param dnsIP     The IP address to check.
+     * @param timeout_ms The total timeout in milliseconds (default 5000).
+     * @return true if reachable, false otherwise.
      */
     public static boolean isIpReachable(String dnsIP,Integer timeout_ms){
         int port = 53;
@@ -194,10 +235,14 @@ public class AddressHelper {
     }
 
     /**
-     * Extract domain name from address
-     * @param url address
-     * @param with_port with_port - if true: return domain with port if found
-     * @return string domain name
+     * ************************************************************************
+     * getDomain()
+     * ************************************************************************
+     * - Extract the domain name from a URL.
+     * ------------------------------------------------------------------------
+     * @param url       The URL to extract from.
+     * @param with_port If true, includes the port number in the result.
+     * @return The domain name string, or null if not found.
      */
     public static String getDomain(String url, @Nullable Boolean with_port){
 

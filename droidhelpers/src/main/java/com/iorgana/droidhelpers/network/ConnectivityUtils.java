@@ -5,16 +5,24 @@ import android.net.ConnectivityManager;
 import android.net.Network;
 import android.net.NetworkCapabilities;
 
+/**
+ * ************************************************************************
+ * ConnectivityUtils
+ * ************************************************************************
+ * Utility methods for checking network connectivity status.
+ */
 public class ConnectivityUtils {
 
 
     /**
-     * ******************************************************************
-     * Is Network Connected
-     * ******************************************************************
-     * - Is device connected to network regardless of whether that connection
-     *   actually has internet access or not.
-     * - Checks on (CELLULAR - WIFI - VPN - ETHERNET)
+     * ************************************************************************
+     * isConnected()
+     * ************************************************************************
+     * - Check if the device is connected to a network.
+     * - Checks for CELLULAR, WIFI, VPN, ETHERNET transports.
+     * ------------------------------------------------------------------------
+     * @param context Any valid context.
+     * @return true if connected to any network, false otherwise.
      */
     public static boolean isConnected(Context context) {
         ConnectivityManager manager = (ConnectivityManager) context.getApplicationContext().getSystemService(Context.CONNECTIVITY_SERVICE);
@@ -39,9 +47,13 @@ public class ConnectivityUtils {
     }
 
     /**
-     * ******************************************************************
-     * Is Device Has Internet Connection
-     * ******************************************************************
+     * ************************************************************************
+     * hasInternet()
+     * ************************************************************************
+     * - Check if the device has verified internet connectivity.
+     * ------------------------------------------------------------------------
+     * @param context Any valid context.
+     * @return true if the device has validated internet access, false otherwise.
      */
     public static boolean hasInternet(Context context){
         ConnectivityManager manager = (ConnectivityManager) context.getApplicationContext()

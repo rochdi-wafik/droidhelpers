@@ -4,14 +4,21 @@ import android.content.Context;
 import android.content.pm.ApplicationInfo;
 
 /**
- * General Utils
+ * ************************************************************************
+ * Utils
+ * ************************************************************************
+ * General utility methods used across the library.
  */
 public class Utils {
 
     /**
-     * **************************************************************
-     *  Is Debugging Mode
-     * **************************************************************
+     * ************************************************************************
+     * isDebuggingMode()
+     * ************************************************************************
+     * - Check if the application is running in debug mode.
+     * ------------------------------------------------------------------------
+     * @param anyContext Any valid context.
+     * @return true if the app is debuggable, false otherwise.
      */
     public static boolean isDebuggingMode(Context anyContext){
         return (anyContext.getApplicationInfo().flags & ApplicationInfo.FLAG_DEBUGGABLE) != 0;

@@ -14,6 +14,16 @@ import com.orhanobut.logger.Logger;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * ************************************************************************
+ * SecurePreferences
+ * ************************************************************************
+ * - Provides encrypted, multi-process-safe SharedPreferences.
+ * - Falls back to unencrypted SharedPreferences in production if
+ *   encrypted initialization fails.
+ * ------------------------------------------------------------------------
+ * @apiNote EncryptedSharedPreferences.PrefKeyEncryptionScheme is deprecated.
+ */
 public class SecurePreferences {
     private static final String TAG = "__SecurePreferences";
 
@@ -22,21 +32,16 @@ public class SecurePreferences {
 
     /**
      * ************************************************************************
-     *   Get SharedPreferences
+     * getSharedPreferences()
      * ************************************************************************
-     * - This SharedPreferences are Encrypted and Multi-Process Safe
-     * - We can use this method to access SharedPreferences from anywhere.
-     * --------------------------------------------------------------------------------
-     * - If EncryptedSharedPreferences fails to initialize:
-     *  -- Debugging Mode: Throw an exception to crash the app and catch the error.
-     *  -- Production Mode: Fallback to non-encrypted SharedPreferences to avoid crashing the app.
-     * --------------------------------------------------------------------------------
-     * @param context Any context (application context is used for prefs).
+     * - Get encrypted, multi-process-safe SharedPreferences.
+     * - In debug mode, throws an exception on failure.
+     * - In production, falls back to unencrypted SharedPreferences.
+     * ------------------------------------------------------------------------
+     * @param context Any context (application context is used).
      * @param name    The name of the SharedPreferences file.
-     * @return        The EncryptedSharedPreferences instance.
-     * @apiNote Warning:  EncryptedSharedPreferences.PrefKeyEncryptionScheme deprecated
+     * @return The EncryptedSharedPreferences instance, or null on error.
      */
-
     public static synchronized SharedPreferences getSharedPreferences(Context context, String name){
         // Check pref name
         if (name == null || name.trim().isEmpty()) {

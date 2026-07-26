@@ -5,7 +5,12 @@ import java.util.concurrent.ConcurrentHashMap;
 
 
 /**
- * @deprecated This class need to be observed and updated.
+ * ************************************************************************
+ * InstancesManager
+ * ************************************************************************
+ * - Manages object instances by class for singleton-like access.
+ * ------------------------------------------------------------------------
+ * @deprecated This class needs to be reviewed and updated.
  */
 public class InstancesManager {
     private static volatile InstancesManager INSTANCE;
@@ -14,19 +19,23 @@ public class InstancesManager {
 
 
     /**
-     * Constructor
-     * -------------------------------------------------------------------------
-     * [-] Its recommended to use getInstance() for singleton
-     * [-] Otherwise use this Constructor fo none-singleton
+     * ************************************************************************
+     * InstancesManager (Constructor)
+     * ************************************************************************
+     * - Use getInstance() for singleton access.
+     * - Use this constructor for non-singleton usage.
      */
     public InstancesManager(){}
 
 
 
     /**
-     * Get Instance
-     * -------------------------------------------------------------------------
-     * [-] Use this method for Singleton
+     * ************************************************************************
+     * getInstance()
+     * ************************************************************************
+     * - Get the singleton instance of InstancesManager.
+     * ------------------------------------------------------------------------
+     * @return The singleton InstancesManager instance.
      */
     public static InstancesManager getInstance() {
         if (INSTANCE == null) {
@@ -41,9 +50,12 @@ public class InstancesManager {
 
 
     /**
-     * Add Instance
-     * -------------------------------------------------------------------------
-     * - Add instance only if not exists in the List
+     * ************************************************************************
+     * add()
+     * ************************************************************************
+     * - Add an instance only if it does not already exist in the list.
+     * ------------------------------------------------------------------------
+     * @param object The instance to add.
      */
     public <T> void add(T object){
         Class<?> mClass = object.getClass();
@@ -54,11 +66,13 @@ public class InstancesManager {
 
 
     /**
-     * Get Instance
-     * -------------------------------------------------------------------------
-     * - The @SuppressWarnings("unchecked") is not necessary but for clean code
-     * - Without it, java warn as because we may try to use the wrong class Type
-     * @return instance OR null if not found
+     * ************************************************************************
+     * get()
+     * ************************************************************************
+     * - Get a saved instance by its class type.
+     * ------------------------------------------------------------------------
+     * @param instanceClass The class of the instance to retrieve.
+     * @return The instance, or null if not found.
      */
     @SuppressWarnings("unchecked")
     public <T> T get(Class<T> instanceClass){
@@ -70,12 +84,14 @@ public class InstancesManager {
     }
 
     /**
-     * Get Instance (with default)
-     * -------------------------------------------------------------------------
-     * - Fixed: this previously always returned defaultInstance unconditionally
-     *   (a debug short-circuit left in from a prior "component cycle" bug hunt),
-     *   so the real lookup below never ran.
-     * - Returns the saved instance if found, otherwise defaultInstance.
+     * ************************************************************************
+     * get() with default
+     * ************************************************************************
+     * - Get a saved instance by its class type, or return a default value.
+     * ------------------------------------------------------------------------
+     * @param instanceClass  The class of the instance to retrieve.
+     * @param defaultInstance The default value if no instance is found.
+     * @return The saved instance, or defaultInstance if not found.
      */
     @SuppressWarnings("unchecked")
     public <T> T get(Class<T> instanceClass, T defaultInstance){
@@ -86,12 +102,14 @@ public class InstancesManager {
         return defaultInstance;
     }
 
-    /*
-     *
-     * Get Instance
-     * -------------------------------------------------------------------------
-     * - If object already saved in List, retrieve it
-     * - If not: save the given object in list, and return
+    /**
+     * ************************************************************************
+     * addAndGet()
+     * ************************************************************************
+     * - Add an instance if not already saved, then return it.
+     * ------------------------------------------------------------------------
+     * @param instance The instance to add and/or retrieve.
+     * @return The instance.
      */
     @SuppressWarnings("unchecked")
     public <T> T addAndGet(T instance){
@@ -108,9 +126,13 @@ public class InstancesManager {
 
 
     /**
-     * Replace fragment
-     * -------------------------------------------------------------------------
-     * - Replace old instance with new instance (instance with same Type)
+     * ************************************************************************
+     * replace()
+     * ************************************************************************
+     * - Replace an existing instance with a new instance of the same type.
+     * ------------------------------------------------------------------------
+     * @param newInstance The new instance to replace with.
+     * @return The new instance.
      */
     public <T> T replace(T newInstance){
         // Fixed: this previously always returned newInstance unconditionally
@@ -133,8 +155,12 @@ public class InstancesManager {
     }
 
     /**
-     * Remove Instance
-     * -------------------------------------------------------------------------
+     * ************************************************************************
+     * remove()
+     * ************************************************************************
+     * - Remove a saved instance by its class type.
+     * ------------------------------------------------------------------------
+     * @param instanceClass The class of the instance to remove.
      */
     public <T> void remove(Class<T> instanceClass){
         try{
@@ -145,8 +171,10 @@ public class InstancesManager {
     }
 
     /**
-     * Remove All
-     * -------------------------------------------------------------------------
+     * ************************************************************************
+     * removeAll()
+     * ************************************************************************
+     * - Remove all saved instances.
      */
     public void removeAll(){
         try {

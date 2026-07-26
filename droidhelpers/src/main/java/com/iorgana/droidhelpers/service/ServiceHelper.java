@@ -5,13 +5,25 @@ import android.content.Context;
 
 import java.util.List;
 
+/**
+ * ************************************************************************
+ * ServiceHelper
+ * ************************************************************************
+ * Helper methods for Android service operations.
+ */
 public class ServiceHelper {
 
     /**
-     * Check IF A Service Is Running
-     * -------------------------------------------------------------------------------
-     * This service return true only if the service is running (startService())
-     * IF The service is bound, but not started yet, it will return false
+     * ************************************************************************
+     * isServiceRunning()
+     * ************************************************************************
+     * - Check if a specific service is currently running.
+     * - Returns true only if the service was started (startService()).
+     * - If the service is bound but not started, it returns false.
+     * ------------------------------------------------------------------------
+     * @param context      Any valid context.
+     * @param serviceClass The class of the service to check.
+     * @return true if the service is running, false otherwise.
      */
     public static boolean isServiceRunning(Context context, Class<?> serviceClass) {
         boolean isRunning = false;

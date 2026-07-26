@@ -4,6 +4,14 @@ import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+/**
+ * ************************************************************************
+ * DataSizeConverter
+ * ************************************************************************
+ * - Utility methods for converting and formatting data sizes.
+ * - Provides methods for tracking maximum speeds and converting between
+ *   bytes, kilobytes, megabytes, and gigabytes.
+ */
 public class DataSizeConverter {
     private static final long KILOBYTE = 1024;
     private static final long MEGABYTE = KILOBYTE * 1024;
@@ -18,12 +26,11 @@ public class DataSizeConverter {
     private long lLastMaxTotal = 0;
 
     /**
-     *--------------------------------------------------------------
-     * Reset Max Speeds
-     * --------------------------------------------------------------
-     * Resets all tracked maximum speed values for this instance.
-     * Call this when a new session or screen starts to prevent
-     * carrying over old max values.
+     * ************************************************************************
+     * resetMaxSpeeds()
+     * ************************************************************************
+     * - Reset all tracked maximum speed values for this instance.
+     * - Call this when starting a new session or screen.
      */
     public void resetMaxSpeeds() {
         this.lastMaxUpload = 0;
@@ -35,12 +42,13 @@ public class DataSizeConverter {
     }
 
     /**
-     *--------------------------------------------------------------
-     * Get Top Upload Speed
-     * --------------------------------------------------------------
-     * Updates and returns the maximum upload speed recorded for this instance.
+     * ************************************************************************
+     * getTopUploadSpeed() (Double)
+     * ************************************************************************
+     * - Update and return the maximum upload speed recorded (double).
+     * ------------------------------------------------------------------------
      * @param currentBytes The current upload speed in bytes.
-     * @return The maximum upload speed recorded so far (double).
+     * @return The maximum upload speed recorded so far.
      */
     public double getTopUploadSpeed(Double currentBytes) {
         if (currentBytes != null && currentBytes > lastMaxUpload) {
@@ -50,12 +58,13 @@ public class DataSizeConverter {
     }
 
     /**
-     *--------------------------------------------------------------
-     * Get Top Upload Speed
-     * --------------------------------------------------------------
-     * Updates and returns the maximum upload speed recorded for this instance.
+     * ************************************************************************
+     * getTopUploadSpeed() (Long)
+     * ************************************************************************
+     * - Update and return the maximum upload speed recorded (long).
+     * ------------------------------------------------------------------------
      * @param currentBytes The current upload speed in bytes.
-     * @return The maximum upload speed recorded so far (long).
+     * @return The maximum upload speed recorded so far.
      */
     public long getTopUploadSpeed(Long currentBytes) {
         if (currentBytes != null && currentBytes > lLastMaxUpload) {
@@ -65,12 +74,13 @@ public class DataSizeConverter {
     }
 
     /**
-     *--------------------------------------------------------------
-     * Get Top Download Speed
-     * --------------------------------------------------------------
-     * Updates and returns the maximum download speed recorded for this instance.
+     * ************************************************************************
+     * getTopDownloadSpeed() (Double)
+     * ************************************************************************
+     * - Update and return the maximum download speed recorded (double).
+     * ------------------------------------------------------------------------
      * @param currentBytes The current download speed in bytes.
-     * @return The maximum download speed recorded so far (double).
+     * @return The maximum download speed recorded so far.
      */
     public double getTopDownloadSpeed(Double currentBytes) {
         if (currentBytes != null && currentBytes > lastMaxDownload) {
@@ -80,12 +90,13 @@ public class DataSizeConverter {
     }
 
     /**
-     *--------------------------------------------------------------
-     * Get Top Download Speed
-     * --------------------------------------------------------------
-     * Updates and returns the maximum download speed recorded for this instance.
+     * ************************************************************************
+     * getTopDownloadSpeed() (Long)
+     * ************************************************************************
+     * - Update and return the maximum download speed recorded (long).
+     * ------------------------------------------------------------------------
      * @param currentBytes The current download speed in bytes.
-     * @return The maximum download speed recorded so far (long).
+     * @return The maximum download speed recorded so far.
      */
     public long getTopDownloadSpeed(Long currentBytes) {
         if (currentBytes != null && currentBytes > lLastMaxDownload) {
@@ -95,12 +106,12 @@ public class DataSizeConverter {
     }
 
     /**
-     *--------------------------------------------------------------
-     * Get Top Total Speed
-     * --------------------------------------------------------------
-     * Updates and returns the maximum total speed (upload + download)
-     * recorded for this instance.
-     * @param currentByteUpload Current upload speed in bytes.
+     * ************************************************************************
+     * getTopTotalSpeed()
+     * ************************************************************************
+     * - Update and return the maximum total speed (upload + download).
+     * ------------------------------------------------------------------------
+     * @param currentByteUpload   Current upload speed in bytes.
      * @param currentByteDownload Current download speed in bytes.
      * @return The maximum total speed recorded so far.
      */
@@ -113,12 +124,13 @@ public class DataSizeConverter {
     }
 
     /**
-     *--------------------------------------------------------------
-     * Bytes To Human Readable
-     * --------------------------------------------------------------
-     * Evaluates bytes to a human-readable string size (e.g., KB, MB, GB).
+     * ************************************************************************
+     * byteToString() (Double)
+     * ************************************************************************
+     * - Convert bytes to a human-readable string size (B, KB, MB, GB).
+     * ------------------------------------------------------------------------
      * @param bytes The size in bytes (double).
-     * @return Formatted size string.
+     * @return Formatted size string (e.g., "1.5 MB").
      */
     public static String byteToString(Double bytes) {
         if (bytes == null) return "0 B";
@@ -135,12 +147,13 @@ public class DataSizeConverter {
     }
 
     /**
-     *--------------------------------------------------------------
-     * Bytes To Human Readable
-     * --------------------------------------------------------------
-     * Evaluates bytes to a human-readable string size (e.g., KB, MB, GB).
+     * ************************************************************************
+     * byteToString() (Long)
+     * ************************************************************************
+     * - Convert bytes to a human-readable string size (B, KB, MB, GB).
+     * ------------------------------------------------------------------------
      * @param bytes The size in bytes (long).
-     * @return Formatted size string.
+     * @return Formatted size string (e.g., "1.5 MB").
      */
     public static String byteToString(Long bytes) {
         if (bytes == null) return "0 B";
@@ -156,16 +169,17 @@ public class DataSizeConverter {
         }
     }
 
-    /*########################### [ Data Formatting ] ###########################*/
+    /*==============================[ Data Formatting ]==============================*/
 
     /**
-     *--------------------------------------------------------------
-     * Short Double
-     * --------------------------------------------------------------
-     * Truncates a double to a specified number of decimal places.
-     * @param value The double value to format.
-     * @param numToKeep Number of decimal places to keep after the dot.
-     * @return Truncated double value.
+     * ************************************************************************
+     * shortDouble()
+     * ************************************************************************
+     * - Truncate a double to a specified number of decimal places.
+     * ------------------------------------------------------------------------
+     * @param value     The double value to format.
+     * @param numToKeep Number of decimal places to keep.
+     * @return The truncated double value.
      */
     public static double shortDouble(double value, int numToKeep) {
         double scalingFactor = Math.pow(10, numToKeep);
@@ -173,15 +187,16 @@ public class DataSizeConverter {
     }
 
     /**
-     *--------------------------------------------------------------
-     * Short Double With Locale
-     * --------------------------------------------------------------
-     * Truncates a double and formats it as a string with the given locale.
-     * @param value The double value to format.
-     * @param numToKeep Number of decimal places to keep after the dot.
-     * @param locale The output locale (e.g., Locale.ENGLISH, Locale.ROOT).
-     *               Defaults to Locale.ENGLISH if null.
-     * @return Formatted string representation of the truncated double.
+     * ************************************************************************
+     * shortDouble() with Locale
+     * ************************************************************************
+     * - Truncate a double and format as a string with the given locale.
+     * ------------------------------------------------------------------------
+     * @param value     The double value to format.
+     * @param numToKeep Number of decimal places to keep.
+     * @param locale    The output locale (e.g., Locale.ENGLISH). Defaults to
+     *                  ENGLISH if null.
+     * @return Formatted string of the truncated double.
      */
     public static String shortDouble(double value, int numToKeep, Locale locale) {
         double scalingFactor = Math.pow(10, numToKeep);
@@ -191,11 +206,12 @@ public class DataSizeConverter {
     }
 
     /**
-     *--------------------------------------------------------------
-     * Remove Chars After Dot
-     * --------------------------------------------------------------
-     * Truncates a string representation of a number after the decimal point.
-     * @param input The input string (e.g., "6.33378GB").
+     * ************************************************************************
+     * removeCharsAfterDot()
+     * ************************************************************************
+     * - Truncate a string representation after the decimal point.
+     * ------------------------------------------------------------------------
+     * @param input       The input string (e.g., "6.33378GB").
      * @param charsToKeep Number of characters to keep after the dot.
      * @return Truncated string (e.g., "6.3GB").
      */
@@ -209,24 +225,30 @@ public class DataSizeConverter {
         return input;
     }
 
-    /*########################### [ Unit Conversions ] ###########################*/
+    /*==============================[ Unit Conversions ]==============================*/
 
     /**
-     *--------------------------------------------------------------
-     * Bytes To Gigabytes
-     * --------------------------------------------------------------
-     * Converts bytes to gigabytes (double).
+     * ************************************************************************
+     * bytesToGigabytes() (Double)
+     * ************************************************************************
+     * - Convert bytes to gigabytes (double).
+     * ------------------------------------------------------------------------
+     * @param bytes The size in bytes.
+     * @return The value in gigabytes.
      */
     public static double bytesToGigabytes(Double bytes) {
         return (bytes / GIGABYTE);
     }
 
     /**
-     *--------------------------------------------------------------
-     * Bytes To Gigabytes (Formatted)
-     * --------------------------------------------------------------
-     * Converts bytes to gigabytes. Returns a formatted string,
-     * automatically removing ".0" for whole numbers to keep output clean.
+     * ************************************************************************
+     * bytesToGigabytes() (Formatted Long)
+     * ************************************************************************
+     * - Convert bytes to gigabytes and format as a string.
+     * - Removes ".0" for whole numbers.
+     * ------------------------------------------------------------------------
+     * @param bytes The size in bytes.
+     * @return Formatted gigabyte string.
      */
     public static String bytesToGigabytes(Long bytes) {
         double gb = (double) bytes / GIGABYTE;
@@ -237,21 +259,27 @@ public class DataSizeConverter {
     }
 
     /**
-     *--------------------------------------------------------------
-     * Bytes To Megabytes
-     * --------------------------------------------------------------
-     * Converts bytes to megabytes (double).
+     * ************************************************************************
+     * bytesToMegabytes() (Double)
+     * ************************************************************************
+     * - Convert bytes to megabytes (double).
+     * ------------------------------------------------------------------------
+     * @param bytes The size in bytes.
+     * @return The value in megabytes.
      */
     public static double bytesToMegabytes(Double bytes) {
         return (bytes / MEGABYTE);
     }
 
     /**
-     *--------------------------------------------------------------
-     * Bytes To Megabytes (Formatted)
-     * --------------------------------------------------------------
-     * Converts bytes to megabytes. Returns a formatted string,
-     * automatically removing ".0" for whole numbers to keep output clean.
+     * ************************************************************************
+     * bytesToMegabytes() (Formatted Long)
+     * ************************************************************************
+     * - Convert bytes to megabytes and format as a string.
+     * - Removes ".0" for whole numbers.
+     * ------------------------------------------------------------------------
+     * @param bytes The size in bytes.
+     * @return Formatted megabyte string.
      */
     public static String bytesToMegabytes(Long bytes) {
         double mb = (double) bytes / MEGABYTE;
@@ -262,40 +290,52 @@ public class DataSizeConverter {
     }
 
     /**
-     *--------------------------------------------------------------
-     * Bytes To Kilobytes
-     * --------------------------------------------------------------
-     * Converts bytes to kilobytes (double).
+     * ************************************************************************
+     * bytesToKilobytes() (Double)
+     * ************************************************************************
+     * - Convert bytes to kilobytes (double).
+     * ------------------------------------------------------------------------
+     * @param bytes The size in bytes.
+     * @return The value in kilobytes.
      */
     public static double bytesToKilobytes(Double bytes) {
         return (bytes / KILOBYTE);
     }
 
     /**
-     *--------------------------------------------------------------
-     * Gigabytes To Bytes
-     * --------------------------------------------------------------
-     * Converts gigabytes to bytes (double).
+     * ************************************************************************
+     * gigabytesToBytes()
+     * ************************************************************************
+     * - Convert gigabytes to bytes (double).
+     * ------------------------------------------------------------------------
+     * @param gigabytes The value in gigabytes.
+     * @return The value in bytes.
      */
     public static double gigabytesToBytes(Double gigabytes) {
         return (gigabytes * GIGABYTE);
     }
 
     /**
-     *--------------------------------------------------------------
-     * Megabytes To Bytes
-     * --------------------------------------------------------------
-     * Converts megabytes to bytes (double).
+     * ************************************************************************
+     * megabytesToBytes()
+     * ************************************************************************
+     * - Convert megabytes to bytes (double).
+     * ------------------------------------------------------------------------
+     * @param megabytes The value in megabytes.
+     * @return The value in bytes.
      */
     public static double megabytesToBytes(Double megabytes) {
         return (megabytes * MEGABYTE);
     }
 
     /**
-     *--------------------------------------------------------------
-     * Kilobytes To Bytes
-     * --------------------------------------------------------------
-     * Converts kilobytes to bytes (double).
+     * ************************************************************************
+     * kilobytesToBytes()
+     * ************************************************************************
+     * - Convert kilobytes to bytes (double).
+     * ------------------------------------------------------------------------
+     * @param kilobytes The value in kilobytes.
+     * @return The value in bytes.
      */
     public static double kilobytesToBytes(Double kilobytes) {
         return (kilobytes * KILOBYTE);

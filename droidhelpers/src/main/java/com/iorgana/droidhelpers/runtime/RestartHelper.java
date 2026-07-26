@@ -12,12 +12,23 @@ import androidx.annotation.Nullable;
 
 import com.orhanobut.logger.Logger;
 
+/**
+ * ************************************************************************
+ * RestartHelper
+ * ************************************************************************
+ * Helper methods for restarting the application.
+ */
 public class RestartHelper {
     private static final String TAG = "__RestartHelper";
 
     /**
-     * Restart app to Main (Startup activity)
-     * ---------------------------------------------------------------------------
+     * ************************************************************************
+     * restartToMain()
+     * ************************************************************************
+     * - Restart the app to the main (launch) activity.
+     * ------------------------------------------------------------------------
+     * @param context    Any valid context.
+     * @param sendAction Optional action to send with the intent.
      */
     public static void restartToMain(Context context, @Nullable String sendAction) {
         PackageManager packageManager = context.getPackageManager();
@@ -38,8 +49,13 @@ public class RestartHelper {
     }
 
     /**
-     * Restart app to specific activity
-     * ---------------------------------------------------------------------------
+     * ************************************************************************
+     * restartToTarget()
+     * ************************************************************************
+     * - Restart the app to a specific target activity.
+     * ------------------------------------------------------------------------
+     * @param context    Any valid context.
+     * @param nextIntent The intent to launch the target activity.
      */
     public static void restartToTarget(Context context, Intent nextIntent) {
         // Create a new intent to launch the target activity
