@@ -1,6 +1,5 @@
 package com.iorgana.droidhelpers.network;
 
-
 import android.util.Log;
 
 import androidx.annotation.Nullable;
@@ -28,8 +27,15 @@ import okhttp3.ResponseBody;
  * - Singleton: one shared OkHttpClient (connection pool, 15s connect /
  *   20s read timeouts) reused across the whole module.
  * ------------------------------------------------------------------------
- * @// TODO: 7/24/2026 Maybe we need to add "ID" for each request,
- *           So that we can access that request later i.e Close request by ID
+ * - Headers are passed per-call (as a method parameter), NOT stored as
+ *   mutable instance state. The old addHeaders()/clearHeaders() instance
+ *   fields were removed because they raced across concurrent callers of
+ *   the shared singleton (one request's headers could be cleared or
+ *   overwritten by another in flight). Pass headers directly to each
+ *   get()/post...() call instead.
+ * ------------------------------------------------------------------------
+ * - Requests can be tagged with a unique "requestId" to allow targeted
+ *   cancellation later via cancelRequestById(requestId).
  */
 public class HttpClient {
     private static final String TAG = "__HttpClient";
@@ -40,8 +46,6 @@ public class HttpClient {
     // Common Media Type for JSON requests
     public static final MediaType MEDIA_TYPE_JSON = MediaType.parse("application/json; charset=utf-8");
 
-    // Headers
-    @Nullable Map<String, String> headers = null;
     /**
      * ************************************************************************
      * ICallback (Interface)
@@ -56,7 +60,6 @@ public class HttpClient {
         void onSuccess(byte[] rawBytes, Headers headers);
         void onError(Exception e);
     }
-
 
     /**
      * ****************************************************************************
@@ -75,7 +78,7 @@ public class HttpClient {
                     // Add other interceptors, caches, or configurations here if needed globally
                     // .addInterceptor(new LoggingInterceptor()) // Example: For request/response logging
                     .build();
-            Logger.d(TAG+" HttpClient(): OkHttpClient instance created and configured");
+            Logger.d(TAG + " HttpClient(): OkHttpClient instance created and configured");
         }
     }
 
@@ -94,8 +97,6 @@ public class HttpClient {
                 }
             }
         }
-        // Clear headers before use the client
-        INSTANCE.clearHeaders();
         return INSTANCE;
     }
 
@@ -120,45 +121,65 @@ public class HttpClient {
 
     /**
      * ************************************************************************
-     * Add Headers
+     * Apply Headers (private helper)
      * ************************************************************************
-     * @param headers request headers like x-api-key
+     * - Adds the given per-call headers (if any) to the request builder.
+     * - Headers are never stored on the instance, so concurrent calls never
+     *   interfere with each other's headers.
      */
-    public void addHeaders(@Nullable Map<String, String> headers){
-        this.headers = headers;
+    private static void applyHeaders(Request.Builder builder, @Nullable Map<String, String> headers) {
+        if (headers != null) {
+            for (Map.Entry<String, String> entry : headers.entrySet()) {
+                builder.addHeader(entry.getKey(), entry.getValue());
+            }
+        }
     }
 
-    /**
-     * ************************************************************************
-     * Clear Headers
-     * ************************************************************************
-     * Make sure to clear old headers before using new http call.
-     */
-    public void clearHeaders(){
-        this.headers = null;
-    }
     /////////////////////////// GET Methods ////////////////////////////////////
+
     /**
      * ************************************************************************
      * get()
      * ************************************************************************
      * - GET Request with Callback.
-     * - This method enqueue the request in Background Thread,
+     * - This method enqueues the request in Background Thread,
      *   You can safely call it from UI Thread.
-     * - Be aware that ICallback invoked in Background Thread.
+     * - Be aware that ICallback is invoked in Background Thread.
      * ------------------------------------------------------------------------
-     * @param url    Target endpoint.
-     * @param ICallback     Result ICallback.
+     * @param url       Target endpoint.
+     * @param ICallback Result ICallback.
      */
     public void get(String url, ICallback ICallback) {
+        get(url, null, null, ICallback);
+    }
+
+    /**
+     * ************************************************************************
+     * get() with per-call headers
+     * ************************************************************************
+     * @param url       Target endpoint.
+     * @param headers   Request headers for this call only (e.g. x-api-key), or null.
+     * @param ICallback Result ICallback.
+     */
+    public void get(String url, @Nullable Map<String, String> headers, ICallback ICallback) {
+        get(url, headers, null, ICallback);
+    }
+
+    /**
+     * ************************************************************************
+     * get() with per-call headers and request ID
+     * ************************************************************************
+     * @param url       Target endpoint.
+     * @param headers   Request headers for this call only (e.g. x-api-key), or null.
+     * @param requestId Unique ID to tag this request, allowing targeted cancellation later. Can be null.
+     * @param ICallback Result ICallback.
+     */
+    public void get(String url, @Nullable Map<String, String> headers, @Nullable String requestId, ICallback ICallback) {
         Request.Builder builder = new Request.Builder().url(url);
-        // Add any headers (i.e. x-api-key)
-        if (this.headers != null) {
-            for (Map.Entry<String, String> entry : headers.entrySet()) {
-                builder.addHeader(entry.getKey(), entry.getValue());
-            }
+        if (requestId != null) {
+            builder.tag(requestId);
         }
-        // pass the request to enqueu
+        applyHeaders(builder, headers);
         Request request = builder.get().build();
         // enqueue in background
         this.enqueue(request, ICallback);
@@ -168,24 +189,44 @@ public class HttpClient {
      * ****************************************************************************
      *  Get (Async)
      * ****************************************************************************
-     * - This method enqueue the request in Background Thread,
+     * - This method enqueues the request in Background Thread,
      *   You can safely call it from UI Thread.
      * - It returns Call object, you can use it for example to cancel the request
-     * @param url The URL to request.
-     * @param callback The OkHttp ICallback to handle response.
+     * @param url      The URL to request.
+     * @param callback The OkHttp Callback to handle response.
      * @return The OkHttp Call object, which can be used to cancel this specific call.
-     * // TODO: 7/24/2026 Maybe thisgetAsync()  method confuse with the above get() method?
      */
     public Call getAsync(String url, okhttp3.Callback callback) {
+        return getAsync(url, null, null, callback);
+    }
+
+    /**
+     * Get (Async) with per-call headers
+     * @param url      The URL to request.
+     * @param headers  Request headers for this call only, or null.
+     * @param callback The OkHttp Callback to handle response.
+     * @return The OkHttp Call object, which can be used to cancel this specific call.
+     */
+    public Call getAsync(String url, @Nullable Map<String, String> headers, okhttp3.Callback callback) {
+        return getAsync(url, headers, null, callback);
+    }
+
+    /**
+     * Get (Async) with per-call headers and request ID
+     * @param url       The URL to request.
+     * @param headers   Request headers for this call only, or null.
+     * @param requestId Unique ID to tag this request, allowing targeted cancellation later. Can be null.
+     * @param callback  The OkHttp Callback to handle response.
+     * @return The OkHttp Call object, which can be used to cancel this specific call.
+     */
+    public Call getAsync(String url, @Nullable Map<String, String> headers, @Nullable String requestId, okhttp3.Callback callback) {
         OkHttpClient client = getClient(); // Throws if not initialized
-        Request.Builder builder = new okhttp3.Request.Builder().url(url);
-        // Add any headers (i.e. x-api-key)
-        if (this.headers != null) {
-            for (Map.Entry<String, String> entry : headers.entrySet()) {
-                builder.addHeader(entry.getKey(), entry.getValue());
-            }
+        Request.Builder builder = new Request.Builder().url(url);
+        if (requestId != null) {
+            builder.tag(requestId);
         }
-        okhttp3.Request request = builder.get().build();
+        applyHeaders(builder, headers);
+        Request request = builder.get().build();
         Call call = client.newCall(request);
         call.enqueue(callback);
         return call; // Return the Call object
@@ -198,7 +239,7 @@ public class HttpClient {
      * - Perform GET request synchronously. (blocking operation)
      * - Do not perform this method on UI Thread.
      * - You must handle background thread by yourself.
-     * - This returns Response, which used to read the response body and headers.
+     * - This returns Response, which is used to read the response body and headers.
      * - You must close the Response body after reading it to avoid resource leaks.
      * ------------------------------------------------------------------------
      * @param url The URL to request.
@@ -206,15 +247,35 @@ public class HttpClient {
      * @throws IOException if a network error occurs.
      */
     public Response getSync(String url) throws IOException {
+        return getSync(url, null, null);
+    }
+
+    /**
+     * Get (Sync) with per-call headers
+     * @param url     The URL to request.
+     * @param headers Request headers for this call only, or null.
+     * @return Response Object.
+     * @throws IOException if a network error occurs.
+     */
+    public Response getSync(String url, @Nullable Map<String, String> headers) throws IOException {
+        return getSync(url, headers, null);
+    }
+
+    /**
+     * Get (Sync) with per-call headers and request ID
+     * @param url       The URL to request.
+     * @param headers   Request headers for this call only, or null.
+     * @param requestId Unique ID to tag this request, allowing targeted cancellation later. Can be null.
+     * @return Response Object.
+     * @throws IOException if a network error occurs.
+     */
+    public Response getSync(String url, @Nullable Map<String, String> headers, @Nullable String requestId) throws IOException {
         OkHttpClient client = getClient();
         Request.Builder builder = new Request.Builder().url(url);
-        // Add any headers (i.e. x-api-key)
-        if (this.headers != null) {
-            for (Map.Entry<String, String> entry : headers.entrySet()) {
-                builder.addHeader(entry.getKey(), entry.getValue());
-            }
+        if (requestId != null) {
+            builder.tag(requestId);
         }
-
+        applyHeaders(builder, headers);
         Request request = builder.get().build();
         return client.newCall(request).execute();
     }
@@ -225,33 +286,54 @@ public class HttpClient {
      * ****************************************************************************
      *  Post Json (Async)
      * ****************************************************************************
-     * - Performs a POST request with a JSON body asynchronously (none-blocking).
+     * - Performs a POST request with a JSON body asynchronously (non-blocking).
      * - This method is executed on background thread.
      * - So you don't need to use background thread by yourself.
      * ------------------------------------------------------------------------
-     * @param url The URL to request.
+     * @param url      The URL to request.
      * @param jsonBody The JSON string to send as body.
-     * @param callback The OkHttp ICallback to handle response.
+     * @param callback The OkHttp Callback to handle response.
      * @return The OkHttp Call object, which can be used to cancel this specific call.
      */
     public Call postJson(String url, String jsonBody, okhttp3.Callback callback) {
+        return postJson(url, null, null, jsonBody, callback);
+    }
+
+    /**
+     * Post Json (Async) with per-call headers
+     * @param url      The URL to request.
+     * @param headers  Request headers for this call only, or null.
+     * @param jsonBody The JSON string to send as body.
+     * @param callback The OkHttp Callback to handle response.
+     * @return The OkHttp Call object, which can be used to cancel this specific call.
+     */
+    public Call postJson(String url, @Nullable Map<String, String> headers, String jsonBody, okhttp3.Callback callback) {
+        return postJson(url, headers, null, jsonBody, callback);
+    }
+
+    /**
+     * Post Json (Async) with per-call headers and request ID
+     * @param url       The URL to request.
+     * @param headers   Request headers for this call only, or null.
+     * @param requestId Unique ID to tag this request, allowing targeted cancellation later. Can be null.
+     * @param jsonBody  The JSON string to send as body.
+     * @param callback  The OkHttp Callback to handle response.
+     * @return The OkHttp Call object, which can be used to cancel this specific call.
+     */
+    public Call postJson(String url, @Nullable Map<String, String> headers, @Nullable String requestId, String jsonBody, okhttp3.Callback callback) {
         OkHttpClient client = getClient(); // Throws if not initialized
-        okhttp3.RequestBody body = okhttp3.RequestBody.create(jsonBody, MEDIA_TYPE_JSON);
-        Request.Builder builder = new okhttp3.Request.Builder().url(url);
-        // Add any headers (i.e. x-api-key)
-        if (this.headers != null) {
-            for (Map.Entry<String, String> entry : headers.entrySet()) {
-                builder.addHeader(entry.getKey(), entry.getValue());
-            }
+        RequestBody body = okhttp3.RequestBody.create(jsonBody, MEDIA_TYPE_JSON);
+        Request.Builder builder = new Request.Builder().url(url);
+        if (requestId != null) {
+            builder.tag(requestId);
         }
+        applyHeaders(builder, headers);
 
         Request request = builder.post(body).build();
         Call call = client.newCall(request);
         call.enqueue(callback);
         return call; // Return the Call object
     }
-
-
 
     /**
      * ********************************************************************************
@@ -261,26 +343,89 @@ public class HttpClient {
      * - Warning: Do not perform this method on UI Thread.
      * - You must handle background thread by yourself.
      * ------------------------------------------------------------------------
+     * @param url      The URL to request.
      * @param jsonBody The JSON string to send as body.
      * @return The OkHttp Response.
      * @throws IOException if a network error occurs.
      * @throws IllegalStateException if OkHttpClient is not initialized.
      */
     public Response postJsonSync(String url, String jsonBody) throws IOException {
+        return postJsonSync(url, null, null, jsonBody);
+    }
+
+    /**
+     * Post Json (Sync) with per-call headers
+     * @param url      The URL to request.
+     * @param headers  Request headers for this call only, or null.
+     * @param jsonBody The JSON string to send as body.
+     * @return The OkHttp Response.
+     * @throws IOException if a network error occurs.
+     */
+    public Response postJsonSync(String url, @Nullable Map<String, String> headers, String jsonBody) throws IOException {
+        return postJsonSync(url, headers, null, jsonBody);
+    }
+
+    /**
+     * Post Json (Sync) with per-call headers and request ID
+     * @param url       The URL to request.
+     * @param headers   Request headers for this call only, or null.
+     * @param requestId Unique ID to tag this request, allowing targeted cancellation later. Can be null.
+     * @param jsonBody  The JSON string to send as body.
+     * @return The OkHttp Response.
+     * @throws IOException if a network error occurs.
+     */
+    public Response postJsonSync(String url, @Nullable Map<String, String> headers, @Nullable String requestId, String jsonBody) throws IOException {
         OkHttpClient client = getClient();
         RequestBody body = okhttp3.RequestBody.create(jsonBody, MEDIA_TYPE_JSON);
-        Request.Builder builder = new okhttp3.Request.Builder().url(url);
-        // Add any headers (i.e. x-api-key)
-        if (this.headers != null) {
-            for (Map.Entry<String, String> entry : headers.entrySet()) {
-                builder.addHeader(entry.getKey(), entry.getValue());
-            }
+        Request.Builder builder = new Request.Builder().url(url);
+        if (requestId != null) {
+            builder.tag(requestId);
         }
+        applyHeaders(builder, headers);
         Request request = builder.post(body).build();
         return client.newCall(request).execute();
     }
 
     ///////////////////////////// Utility Methods //////////////////////////////////
+
+    /**
+     * ***************************************************************************
+     *  Cancel Request by ID
+     * ***************************************************************************
+     * - Cancels any currently running or queued HTTP request that was tagged
+     *   with the specified requestId.
+     * - This is useful for stopping a specific network activity (e.g., when
+     *   an Activity/Fragment is destroyed, or a user cancels an action).
+     * ------------------------------------------------------------------------
+     * @param requestId The unique ID assigned to the request(s) to be canceled.
+     */
+    public void cancelRequestById(@Nullable String requestId) {
+        if (okHttpClient == null || requestId == null) {
+            return;
+        }
+
+        int canceledCount = 0;
+
+        // Cancel queued calls
+        for (Call call : okHttpClient.dispatcher().queuedCalls()) {
+            if (requestId.equals(call.request().tag())) {
+                call.cancel();
+                canceledCount++;
+            }
+        }
+
+        // Cancel running calls
+        for (Call call : okHttpClient.dispatcher().runningCalls()) {
+            if (requestId.equals(call.request().tag())) {
+                call.cancel();
+                canceledCount++;
+            }
+        }
+
+        if (canceledCount > 0) {
+            Logger.d(TAG + " cancelRequestById(): Canceled " + canceledCount + " request(s) with ID: " + requestId);
+        }
+    }
 
     /**
      * ***************************************************************************
@@ -293,12 +438,11 @@ public class HttpClient {
      *  if the thread executing them is interrupted.
      */
     public void cancelAllRequests() {
-        clearHeaders();
         if (okHttpClient != null) {
             okHttpClient.dispatcher().cancelAll();
-            Logger.d(TAG+" cancelAllRequests(): All HTTP requests cancelled.");
+            Logger.d(TAG + " cancelAllRequests(): All HTTP requests cancelled.");
         } else {
-            Logger.w(TAG+" cancelAllRequests(): OkHttpClient not initialized, cannot cancel requests.");
+            Logger.w(TAG + " cancelAllRequests(): OkHttpClient not initialized, cannot cancel requests.");
         }
     }
 
@@ -354,7 +498,6 @@ public class HttpClient {
      * - For most ad SDKs, the HttpClient lives for the lifetime of the app.
      */
     public void shutdown() {
-        clearHeaders();
         if (okHttpClient != null) {
             Log.d(TAG, "shutdown: Shutting down OkHttpClient and its resources.");
             okHttpClient.dispatcher().executorService().shutdown();
@@ -362,7 +505,7 @@ public class HttpClient {
             okHttpClient = null; // Clear the reference
             INSTANCE = null; // Clear the singleton instance reference
         } else {
-            Logger.w(TAG+" shutdown(): OkHttpClient not initialized, nothing to shut down.");
+            Logger.w(TAG + " shutdown(): OkHttpClient not initialized, nothing to shut down.");
         }
     }
 
@@ -373,8 +516,8 @@ public class HttpClient {
      * - Shared executor for GET/POST: runs the call async and routes the
      *   response body (or transport error) into the ICallback.
      * ------------------------------------------------------------------------
-     * @param request Prepared OkHttp request.
-     * @param ICallback      Result ICallback.
+     * @param request   Prepared OkHttp request.
+     * @param ICallback Result ICallback.
      */
     private void enqueue(Request request, ICallback ICallback) {
         okHttpClient.newCall(request).enqueue(new okhttp3.Callback() {

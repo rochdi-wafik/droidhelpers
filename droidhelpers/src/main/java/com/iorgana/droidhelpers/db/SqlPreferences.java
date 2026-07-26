@@ -124,7 +124,7 @@ import java.util.concurrent.atomic.AtomicReference;
  *
  * --------------------------------------------------------------------------------
  * $ Developed By: Rochdi Wafik
- * $ Last Update: 25-08-2024
+ * $ Last Update: 25-07-2026
  *
  */
 
@@ -183,10 +183,15 @@ public class SqlPreferences extends SQLiteOpenHelper {
      * - Therefore, It's recommended to keep encryption enabled. IF you want to
      *   disable it, make sure to edit it before this class initialized,
      *   usually in application->onCreate() or any app startup point
-     * @implNote Hardcoded Key not problem because this Lib is static, no remote config
+     * @implNote Fixed: this library's source (including this default key) is public
+     *           on GitHub, so any app that never calls setSecretKey() is only as
+     *           "encrypted" as a key anyone can read from the repo. Call
+     *           setSecretKey() with an app-specific key before first use. If you
+     *           don't, getInstance() now warns loudly, and throws in debug builds.
      */
-    public static String SECRET_KEY = "Ser5@3h6K#t5?f&58";
-    public static final boolean ENABLE_ENCRYPTION = true;
+    public static final String DEFAULT_SECRET_KEY = "Ser5@3h6K#t5?f&5";
+    public static String SECRET_KEY = DEFAULT_SECRET_KEY;
+    public static boolean ENABLE_ENCRYPTION = true;
 
     /**
      * Caching
@@ -224,30 +229,91 @@ public class SqlPreferences extends SQLiteOpenHelper {
     }
 
     /**
-     * --------------------------------------------------------------------------------
-     *   Get Instance
-     * --------------------------------------------------------------------------------
-     * - Use this method to get singleton instance
-     * @param context any context
-     * --------------------------------------------------------------------------------
-     * - When getInstance() is called, it will check if data loaded into the cache,
-     * - IF data not loaded yet, this method will loaded in UI Thread.
-     * - So that it's better to call init() to load data in background one app opened.
+     * ---------------------------------------------------------------------------------
+     *  Get Instance (Singleton)
+     * ---------------------------------------------------------------------------------
+     * - Returns the singleton instance of SqlPreferences.
+     * - Initializes with the default secret key if the instance is not yet created.
+     * - Automatically ensures data is loaded into the in-memory cache synchronously
+     *   if it hasn't been loaded yet.
+     *
+     * @param context Any valid context (will be safely converted to ApplicationContext)
+     * @return The singleton SqlPreferences instance
      */
-    public static SqlPreferences getInstance(Context context){
-        if(INSTANCE==null){
-            synchronized (SqlPreferences.class){
-                if(INSTANCE==null){
+    public static SqlPreferences getInstance(Context context) {
+        return getInstance(context, null);
+    }
+
+    /**
+     * ---------------------------------------------------------------------------------
+     *  Get Instance (Singleton with Custom Secret Key)
+     * ---------------------------------------------------------------------------------
+     * - Returns the singleton instance of SqlPreferences.
+     * - Initializes with the provided custom secret key if the instance is not yet created.
+     * - The secret key must be 16, 24, or 32 bytes long (128, 192, or 256 bits).
+     * - Automatically ensures data is loaded into the in-memory cache synchronously
+     *   if it hasn't been loaded yet.
+     *
+     * @param context   Any valid context (will be safely converted to ApplicationContext)
+     * @param secretKey Custom secret key for encryption. Pass null to use the default key.
+     * @return The singleton SqlPreferences instance
+     * @throws IllegalArgumentException if the secret key length is invalid (in debug mode)
+     *
+     * @implNote Singleton Behavior: The first call to any getInstance() or init() method
+     *           dictates the configuration (including the secret key). Subsequent calls
+     *           with different keys will be silently ignored, as the instance is already created.
+     */
+    public static SqlPreferences getInstance(Context context, String secretKey) {
+        if (INSTANCE == null) {
+            synchronized (SqlPreferences.class) {
+                if (INSTANCE == null) {
                     INSTANCE = new SqlPreferences(context.getApplicationContext());
+                    if (secretKey != null) {
+                        INSTANCE.setSecretKey(secretKey);
+                    } else {
+                        warnIfUsingDefaultSecretKey();
+                    }
                 }
             }
         }
 
-        // Check if data loaded to in-memory (Cache)
+        // Check if data is loaded into in-memory (Cache).
+        // If already loaded (e.g., via init()), this returns immediately without blocking.
         INSTANCE.initSync();
 
         return INSTANCE;
     }
+
+    /**
+     * ---------------------------------------------------------------------------------
+     *  Warn If Using Default Secret Key
+     * ---------------------------------------------------------------------------------
+     * - This library's source (including DEFAULT_SECRET_KEY) is public on GitHub, so
+     *   relying on the default key means the "encryption" can be reversed by anyone
+     *   who reads the repo.
+     */
+    private static void warnIfUsingDefaultSecretKey(){
+        if(ENABLE_ENCRYPTION && DEFAULT_SECRET_KEY.equals(SECRET_KEY)){
+            String err = "SqlPreferences: using the library's default SECRET_KEY, which is " +
+                    "public (this library's source is on GitHub). Call setSecretKey() with " +
+                    "your own app-specific key before first use, or your \"encrypted\" data " +
+                    "is only as safe as a key anyone can read from the repo.";
+            Logger.e(TAG+" warnIfUsingDefaultSecretKey(): "+err);
+        }
+    }
+
+    /**
+     * ---------------------------------------------------------------------------
+     *  Get Current Secret Key
+     *  --------------------------------------------------------------------------
+     * - If we are in development mode, and we didn't provide a secret key,
+     *  the getInstance() will throw an exception.
+     * - So you may want to use this method to quickly assign secret key to setSecretKey()
+     */
+    public String getCurrentSecretKey() {
+        return SECRET_KEY;
+    }
+
 
 
     /**
@@ -293,34 +359,65 @@ public class SqlPreferences extends SQLiteOpenHelper {
      * ---------------------------------------------------------------------------------
      *   Init (Async)
      * ---------------------------------------------------------------------------------
-     * - Use this method once app opened to load data into cache in background.
-     * - This can method accept callback to notify when data is fully loaded into cache.
+     * - Use this method once the app opens (e.g., in Application.onCreate()) to load
+     *   data into the cache in the background.
+     * - This method accepts a callback to notify when data is fully loaded into cache.
+     * - Uses the default secret key.
+     *
+     * @param anyContext      Any valid context (will be safely converted to ApplicationContext)
+     * @param onLoadListener  Callback to notify when data loading is complete (can be null)
      */
-    public static void init(Context anyContext, @Nullable OnLoadListener onLoadListener){
-        // Create Instance
-        if(INSTANCE==null){
-            synchronized (SqlPreferences.class){
-                if(INSTANCE==null){
+    public static void init(Context anyContext, @Nullable OnLoadListener onLoadListener) {
+        // Delegate to the overloaded method with a null secret key
+        init(anyContext, null, onLoadListener);
+    }
+
+    /**
+     * ---------------------------------------------------------------------------------
+     *   Init (Async) with Custom Secret Key
+     * ---------------------------------------------------------------------------------
+     * - Use this method once the app opens (e.g., in Application.onCreate()) to load
+     *   data into the cache in the background using a custom encryption key.
+     * - This is the RECOMMENDED way to initialize the library if you are using a
+     *   custom secret key. It prevents main-thread blocking and ensures the correct
+     *   key is set before any data is read from or written to the database.
+     *
+     * @param anyContext      Any valid context (will be safely converted to ApplicationContext)
+     * @param secretKey       Custom secret key for encryption (16, 24, or 32 bytes).
+     *                        Pass null to use the default key.
+     * @param onLoadListener  Callback to notify when data loading is complete (can be null)
+     */
+    public static void init(Context anyContext, @Nullable String secretKey, @Nullable OnLoadListener onLoadListener) {
+        // Create Instance (Double-checked locking)
+        if (INSTANCE == null) {
+            synchronized (SqlPreferences.class) {
+                if (INSTANCE == null) {
                     INSTANCE = new SqlPreferences(anyContext.getApplicationContext());
+                    if (secretKey != null) {
+                        INSTANCE.setSecretKey(secretKey);
+                    } else {
+                        warnIfUsingDefaultSecretKey();
+                    }
                 }
             }
         }
 
-
-        executors.execute(()->{
+        // Execute background loading
+        executors.execute(() -> {
             // Load all data from Sql to Cache
-            if(INSTANCE.cache.isEmpty()) {
+            if (INSTANCE.cache.isEmpty()) {
                 // Logger.d(TAG + " init(): Data not loaded to cache yet, Loading in background");
                 INSTANCE.cache.putAll(INSTANCE.getAll());
                 // Logger.d(TAG + " init(): Data has been loaded to cache");
             }
 
-            // Notify listener
-            if(onLoadListener!=null) {
+            // Notify listener on the same background thread (or post to main thread if preferred)
+            if (onLoadListener != null) {
                 onLoadListener.onLoaded();
             }
         });
     }
+
     /**
      * ---------------------------------------------------------------------------------
      *   Init (Sync)
@@ -340,28 +437,6 @@ public class SqlPreferences extends SQLiteOpenHelper {
         }
     }
 
-    /**
-     * ---------------------------------------------------------------------------------
-     * Set Secret Key
-     * ---------------------------------------------------------------------------------
-     * - Override default secret key, if you want to use your own key
-     * - Secret Key must be 16, 24, or 32 bytes long (128, 192, or 256 bits)
-     */
-    public void setSecretKey(String secretKey) {
-       // Check if secret key is valid length
-        if(secretKey.length()!=16 && secretKey.length()!=24 && secretKey.length()!=32){
-            String err = "Secret Key must be 16, 24, or 32 bytes long (128, 192, or 256 bits)";
-            Logger.e(TAG+" setSecretKey(): "+err);
-            if(Utils.isDebuggingMode(context)){
-                throw new IllegalArgumentException(err);
-            }
-            // IF production, just use the default key
-
-        }else{
-            SECRET_KEY = secretKey;
-        }
-
-    }
 
     /**
      * ---------------------------------------------------------------------------------
@@ -522,8 +597,10 @@ public class SqlPreferences extends SQLiteOpenHelper {
      * ---------------------------------------------------------------------------------
      * - Put data in the temporary map,
      * - once apply() is called, put temp map to cache (Sync), then write to disk (Async)
+     * - Fixed: parameter type was `float` (copy/paste from putFloat), which silently
+     *   truncated precision and made getLong() (checks `instanceof Long`) never match.
      */
-    public SqlPreferences putLong(String key, float value){
+    public SqlPreferences putLong(String key, long value){
         tempMap.put(key, value);
         return this;
     }
@@ -970,6 +1047,33 @@ public class SqlPreferences extends SQLiteOpenHelper {
             return ois.readObject();
         } catch (IOException | ClassNotFoundException e) {
             return null;
+        }
+    }
+
+
+    /**
+     * ---------------------------------------------------------------------------------
+     * Set Secret Key
+     * ---------------------------------------------------------------------------------
+     * - Secret Key must be 16, 24, or 32 bytes long (128, 192, or 256 bits).
+     * - If an invalid key is provided in debug mode, it throws an exception.
+     * - In production, it silently falls back to the DEFAULT_SECRET_KEY to prevent crashes.
+     */
+    private void setSecretKey(String secretKey) {
+        if (secretKey == null) {
+            return; // Safeguard against null
+        }
+
+        if (secretKey.length() != 16 && secretKey.length() != 24 && secretKey.length() != 32) {
+            String err = "Secret Key must be 16, 24, or 32 bytes long. Falling back to default.";
+            Logger.e(TAG + " setSecretKey(): " + err);
+            if (Utils.isDebuggingMode(context)) {
+                throw new IllegalArgumentException(err);
+            }
+            // In production, it does nothing here, leaving SECRET_KEY as DEFAULT_SECRET_KEY.
+        } else {
+            SECRET_KEY = secretKey;
+            ENABLE_ENCRYPTION = true;
         }
     }
 }

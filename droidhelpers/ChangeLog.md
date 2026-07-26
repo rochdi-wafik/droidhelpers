@@ -17,7 +17,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## 16-07-2025
 ### Added
 * Add new helpers, like HttpClient
-* 
+
 ### Changed
 * Support Android-15
 * Update for loops: fix indexOutOfBound because we remove from list during loop without update i value using i--
+
+## 25-07-2026
+### Changed
+* Root updates and bug fixes and improvements
+
+### Added
+* New helpers added, like HmacVerifier

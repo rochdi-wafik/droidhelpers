@@ -6,6 +6,7 @@ import android.content.SharedPreferences;
 
 import androidx.appcompat.app.AppCompatDelegate;
 
+import com.iorgana.droidhelpers.db.SqlPreferences;
 import com.orhanobut.logger.AndroidLogAdapter;
 import com.orhanobut.logger.BuildConfig;
 import com.orhanobut.logger.FormatStrategy;
@@ -50,6 +51,13 @@ public class App extends Application {
 
         // Set Light
         setNightMode(false);
+
+        // Load To Cache Memory (Sync)
+        // With Custom Secret Key
+        String secretKey = SqlPreferences.DEFAULT_SECRET_KEY;
+        SqlPreferences.getInstance(this, secretKey).initSync();
+
+
 
     }
 

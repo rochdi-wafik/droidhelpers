@@ -26,9 +26,8 @@ import androidx.fragment.app.FragmentManager;
  * @deprecated This class does not handle fragments lifecycle, only save them.
  */
 public class FragmentsManager {
-    private static volatile FragmentsManager INSTANCE;
 
-//    Map<Class<?>, Fragment> fragmentsList = new ConcurrentHashMap<>();
+    //    Map<Class<?>, Fragment> fragmentsList = new ConcurrentHashMap<>();
 //    Map<Class<?>, String> keysList = new ConcurrentHashMap<>();
     FragmentManager fragmentManager;
 
@@ -36,30 +35,21 @@ public class FragmentsManager {
     /**
      * Constructor
      * -------------------------------------------------------------------------
-     * [-] Use this method for none-singleton
+     * [-] Create one instance per Activity (e.g. in onCreate()); don't cache it
+     *     statically across Activity recreation.
      */
     public FragmentsManager(FragmentActivity context){
         this.fragmentManager = context.getSupportFragmentManager();
     }
 
-
-
-    /**
-     * Get Instance
-     * -------------------------------------------------------------------------
-     * Use this method for Singleton object
+    /*
+     * Fixed: getInstance(FragmentActivity) was removed. It was a static singleton
+     * that cached whichever Activity's FragmentManager was passed in first, then kept
+     * returning that same (possibly destroyed) Activity's FragmentManager forever after
+     * -- an Activity leak, plus a crash/no-op risk once that Activity was recreated
+     * (rotation, back navigation, process death). Use `new FragmentsManager(activity)`
+     * per Activity instead.
      */
-    public static FragmentsManager getInstance(FragmentActivity context) {
-        if (INSTANCE == null) {
-            synchronized (FragmentsManager.class) {
-                if (INSTANCE == null) {
-                    INSTANCE = new FragmentsManager(context);
-                }
-            }
-        }
-        return INSTANCE;
-    }
-
 
     /**
      * Add Fragment

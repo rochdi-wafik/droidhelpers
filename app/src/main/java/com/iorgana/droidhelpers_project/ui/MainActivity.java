@@ -20,10 +20,7 @@ public class MainActivity extends AppCompatActivity {
         binding = ActivityMainBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
-
-        SqlPreferences.getInstance(activity).initSync();
-
-
+        // TODO: 7/25/2026 Nothing Yet ..
 
     }
 }

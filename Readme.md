@@ -17,59 +17,64 @@
 
 ### 🔔 UI Alerts
 
-- `AlertMaker` – Build Bootstrap-style alert dialogs (toast/snackbar/alert dialog) with ease.
+- `AlertMaker` - Build Bootstrap-style alert dialogs (toast/snackbar/alert dialog) with ease.
 
 ---
 
 ### 🔁 Converters
 
-- `DataSizeConverter` – Convert bytes to human-readable size (KB, MB, etc.).
-- `JsonConverter` – Serialize and deserialize JSON using native or third-party parser.
+- `DataSizeConverter` - Convert bytes to human-readable size (KB, MB, etc.).
+- `JsonConverter` - Serialize and deserialize JSON using native or third-party parser.
 
 ---
 
 ### 🔐 Crypto
 
-- `Base64Helper` – Encode/decode strings and byte arrays to/from Base64.
-- `StringCrypto` – Encrypt/decrypt using AES, XOR, etc.
+- `Base64Helper` - Encode/decode strings and byte arrays to/from Base64.
+- `CryptoUtil` - Encrypt/decrypt using AES, XOR, etc.
+- `HmacVerifier` - Verify HMAC signatures
 
 ---
 
 ### 📦 Local Storage
 
-- `SimpleDB` – SharedPreferences wrapper to save/get/delete **objects** or **lists** of objects.
-- `SqlPreferences` – A SharedPreferences-like API, backed by SQLite for more flexibility.
+- `SimpleDB` - SharedPreferences wrapper to save/get/delete **objects** or **lists** of objects.
+- `SqlPreferences` - A SharedPreferences-like API, backed by SQLite for more flexibility.
+- `SecurePreferences` - Encrypted & Thread /Multi Process safe
 
 ---
 
 ### 🌐 Network
 
-- `AddressHelpers` – Utilities for working with IPs and domains.
-- `HttpClient` – Simplified HTTP request interface (GET, POST, headers, etc.).
-- `WifiHelper` – Manage and check WiFi and hotspot states (enabled, disabled, etc.).
+- `AddressHelpers` - Utilities for working with IPs and domains.
+- `HttpClient` - Simplified HTTP request interface (GET, POST, headers, etc.).
+- `WifiHelper` - Manage and check WiFi and hotspot states (enabled, disabled, etc.).
+- `ConnectivityUtils` - Check connection states like isConnected, hasInternet, etc.
 
 ---
 
 ### 🔔 Notifications
 
-- `NotificationMaker` – Easily create modern and backward-compatible notifications with fewer lines of code.
+- `NotificationMaker` - Easily create modern and backward-compatible notifications with fewer lines of code.
 
 ---
 
 ### ⏱️ Timers
 
-- `Chronometer` – Track elapsed time easily.
-- `Countdown` – Countdown timer utilities.
+- `ChronometerTimer` - Track elapsed time easily.
+- `CountdownTimer` - Countdown timer utilities.
 
 ---
+### 🛠️ Usage Examples
+- Visit [Examples.MD](/droidhelpers/docs/Examples.MD) for full examples.
 
 ## 📦 Installation
 
-You can import this library into your project as a local module or via GitHub (JitPack integration coming soon).
+You can import this library into your project as a local module (git clone) or as dependency
 
-### Option 1: Use ad dependency
+### Option 1: Implement as dependency
 ```gradle
-implementation 'com.github.rochdi-wafik:droidhelpers:v1.0.0'
+implementation 'com.github.rochdi-wafik:droidhelpers:x.x.x'
 ```
 ### Option 2: Import as Module
 
@@ -81,37 +86,20 @@ implementation 'com.github.rochdi-wafik:droidhelpers:v1.0.0'
 implementation project(":droidhelpers")
 ```
 
----
-
-## 🛠️ Usage Examples
-### 💾 Database: SqlPreferences.class
-Here is a simple usage of how to store primitive data
-```java
-SqlPreferences.getInstance(anyContext)
-              .putString("my_name", "Sami")
-              .putDouble("weight", 35,4)
-              .putBoolean("isAdmin", true)
-              .apply();
-```
-Here is a simple usage of how to store serializable object and list
-```java
-SqlPreferences.getInstance(anyContext)
-              .putObject("user", new User(...))
-              .putListObject("users", Arrays.asList(new User(..)))
-              .apply();
-```
-- Note: Data will not be saved until .apply() is called
 
 ---
 
 ## 🔧 Compatibility
-* Minimum SDK: API 24
+* Minimum SDK: API 29
 * Language: Java (compatible with Kotlin-based projects)
 
 [![](https://jitpack.io/v/rochdi-wafik/droidhelpers.svg)](https://jitpack.io/#rochdi-wafik/droidhelpers)
 
+## Developer Guide
+- Visit [DeveloperGuide.MD](/droidhelpers/docs/Developer_Guide.MD)
+
 --- 
 
 ## 📄 License
-MIT License – feel free to use, modify, and distribute with attribution.
+MIT License - feel free to use, modify, and distribute with attribution.
 

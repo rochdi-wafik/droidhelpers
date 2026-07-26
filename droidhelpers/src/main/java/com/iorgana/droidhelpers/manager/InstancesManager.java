@@ -69,16 +69,21 @@ public class InstancesManager {
         return null;
     }
 
-    // TODO: 10/8/2024 temp trying to solve component cycle issue
+    /**
+     * Get Instance (with default)
+     * -------------------------------------------------------------------------
+     * - Fixed: this previously always returned defaultInstance unconditionally
+     *   (a debug short-circuit left in from a prior "component cycle" bug hunt),
+     *   so the real lookup below never ran.
+     * - Returns the saved instance if found, otherwise defaultInstance.
+     */
+    @SuppressWarnings("unchecked")
     public <T> T get(Class<T> instanceClass, T defaultInstance){
-        if(true){
-            return defaultInstance;
-        }
         Object obj = instanceList.get(instanceClass);
         if(obj!=null && instanceClass.isInstance(obj)){
             return (T) obj;
         }
-        return null;
+        return defaultInstance;
     }
 
     /*
@@ -90,10 +95,9 @@ public class InstancesManager {
      */
     @SuppressWarnings("unchecked")
     public <T> T addAndGet(T instance){
-        // TODO: 10/8/2024 temp 
-        if(true){
-            return instance;
-        }
+        // Fixed: this previously always returned the passed-in instance unconditionally
+        // (a debug short-circuit left in from a prior "component cycle" bug hunt),
+        // so it never actually saved or reused anything.
         // Check if already saved, if not? save it first.
         Class<?> mClass = instance.getClass();
         if (!instanceList.containsKey(mClass)) {
@@ -109,10 +113,9 @@ public class InstancesManager {
      * - Replace old instance with new instance (instance with same Type)
      */
     public <T> T replace(T newInstance){
-        // TODO: 10/8/2024 temp
-        if(true){
-            return newInstance;
-        }
+        // Fixed: this previously always returned newInstance unconditionally
+        // (a debug short-circuit left in from a prior "component cycle" bug hunt),
+        // so the saved instance was never actually replaced.
         // Get old fragment
         try{
             Class<?> mClass = newInstance.getClass();

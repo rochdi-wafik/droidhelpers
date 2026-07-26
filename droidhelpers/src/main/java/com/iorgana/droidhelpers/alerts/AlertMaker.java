@@ -13,16 +13,12 @@ import androidx.core.content.res.ResourcesCompat;
 
 import com.iorgana.droidhelpers.R;
 
-import com.iorgana.droidhelpers.htmltextview.HtmlFormatter;
-import com.iorgana.droidhelpers.htmltextview.HtmlFormatterBuilder;
-import com.iorgana.droidhelpers.htmltextview.HtmlResImageGetter;
-
 public class AlertMaker {
     public interface OnCloseListener{
         void onClose();
     }
     public enum AlertType {
-        Primary, Secondary, Info, Success, Warning, Danger, DEFAULT, HTML
+        Primary, Secondary, Info, Success, Warning, Danger, HTML, DEFAULT
     }
 
     private final Context context;
@@ -30,6 +26,8 @@ public class AlertMaker {
     private AlertType alertType = AlertType.Primary;
     private String title;
     private String content;
+
+    // deprecated html under maintenance
     private String html;
 
     // By default, alert is not cancelable
@@ -135,12 +133,13 @@ public class AlertMaker {
     public LinearLayout build(){
 
         // [-] Check if we should build HTML
-        if(alertType== AlertType.HTML){
-           LinearLayout resultLayout = buildHtmlLayout();
-           if(resultLayout!=null){
-               return resultLayout;
-           }
-        }
+        // @// TODO: 7/25/2026 html under maintenance
+//        if(alertType== AlertType.HTML){
+//           LinearLayout resultLayout = buildHtmlLayout();
+//           if(resultLayout!=null){
+//               return resultLayout;
+//           }
+//        }
 
         // [-] Else, build normal layout
         return buildNormalLayout();
@@ -149,6 +148,9 @@ public class AlertMaker {
 
     /**
      * Build Html Layout
+     * @deprecated This method is not working in this release,
+     *             7/25/2026 HtmlFormatter removed from the lib because it had some bugs.
+     *             we'll see if we can replace it with something else or new HtmlFormatter
      */
     private LinearLayout buildHtmlLayout(){
         if(html!=null && !html.isEmpty() && alertType== AlertType.HTML){
@@ -188,8 +190,9 @@ public class AlertMaker {
             });
 
             // Insert html in layout
-            Spanned formattedHtml = HtmlFormatter.formatHtml(new HtmlFormatterBuilder().setHtml(html).setImageGetter(new HtmlResImageGetter(context)));
-            textView.setText(formattedHtml);
+            // @ TODO: 7/25/2026 HtmlFormatter removed from the lib because it had some bugs. we'll see if we can replace it with something else or new HtmlFormatter
+            //   Spanned formattedHtml = HtmlFormatter.formatHtml(new HtmlFormatterBuilder().setHtml(html).setImageGetter(new HtmlResImageGetter(context)));
+            //   textView.setText(formattedHtml);
 
 
             // Return layout
