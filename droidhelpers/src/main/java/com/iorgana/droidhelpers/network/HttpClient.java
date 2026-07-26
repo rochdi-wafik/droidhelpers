@@ -109,6 +109,15 @@ public class HttpClient {
      * @return The singleton OkHttpClient instance.
      * @throws IllegalStateException if the HttpClient has not been properly initialized
      * (e.g., if getInstance() hasn't been called, though it initializes lazily).
+     * @apiNote This method returns a third-party type (okhttp3.OkHttpClient), so the
+     *          `okhttp` dependency in this module's build.gradle MUST stay declared as
+     *          `api`, not `implementation`. `implementation` hides a dependency's classes
+     *          from consumers of this module, so any consumer module trying to name
+     *          `OkHttpClient` (or Response/Call/Headers, also returned/accepted by this
+     *          class' public methods) would fail with "Cannot access ..." even though
+     *          calling getInstance()/getClient() itself compiles fine. Rule of thumb:
+     *          any dependency type that appears in a public method signature here must
+     *          be `api`, not `implementation`.
      */
     public OkHttpClient getClient() {
         if (okHttpClient == null) {
