@@ -1,0 +1,30 @@
+pluginManagement {
+    repositories {
+        google()
+        mavenCentral()
+        gradlePluginPortal()
+    }
+}
+dependencyResolutionManagement {
+    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+    repositories {
+        google()
+        mavenCentral()
+        maven { url "https://maven.google.com"}
+
+        // Add Library Repository  Github Packages
+        /* We don't use Github Packages now, GitPack.io is used instead
+        maven {
+            url = uri("https://maven.pkg.github.com/rochdi-wafik/droidhelpers")
+            credentials {
+                username = gp_user
+                password = gp_key
+            }
+        }
+         */
+    }
+}
+
+rootProject.name = "DroidHelpers"
+include ':app'
+include ':droidhelpers'

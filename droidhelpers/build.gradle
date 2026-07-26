@@ -1,0 +1,102 @@
+plugins {
+    id 'com.android.library'
+    id 'maven-publish'
+}
+
+android {
+    namespace 'com.iorgana.droidhelpers'
+    compileSdk 36
+
+    defaultConfig {
+        minSdk 28
+
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        consumerProguardFiles "consumer-rules.pro"
+
+    }
+
+    buildTypes {
+        debug {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+
+    // we'll publish the 'release' variant for libraries.
+    publishing {
+        singleVariant('release') {
+            // We can specify 'release' or other variants here
+            withSourcesJar()
+            withJavadocJar()
+        }
+    }
+
+
+}
+
+dependencies {
+
+    // Logger ------------------------------------------------------------
+    implementation 'com.orhanobut:logger:2.2.0' // for debugging
+    // Gson --------------------------------------------------------------
+    implementation 'com.google.code.gson:gson:2.14.0'
+
+    // OkHttp ------------------------------------------------------------
+    implementation(platform("com.squareup.okhttp3:okhttp-bom:5.4.0"))
+    implementation("com.squareup.okhttp3:okhttp")
+    implementation("com.squareup.okhttp3:logging-interceptor")
+
+    // [-] Apache IO -----------------------------------------------------
+    implementation 'commons-io:commons-io:2.22.0'
+
+    // [-] Encrypted+Thread-safe Preferences ------------------------------------------------
+    implementation 'com.frybits.harmony:harmony-crypto:1.2.7'
+    implementation 'androidx.security:security-crypto:1.1.0'
+
+
+
+    // Android Dependencies -----------------------------------------------
+    implementation 'androidx.appcompat:appcompat:1.7.1'
+    implementation 'com.google.android.material:material:1.14.0'
+    implementation 'androidx.preference:preference:1.2.1'
+    testImplementation 'junit:junit:4.13.2'
+    androidTestImplementation 'androidx.test.ext:junit:1.3.0'
+    androidTestImplementation 'androidx.test.espresso:espresso-core:3.7.0'
+
+}
+
+// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+// --- Maven Local Publish Script
+//  publish the module to local Maven repository (in .m2/repository).
+// That way, we can test it just like a real dependency. before upload it to live repo
+
+afterEvaluate {
+    publishing {
+        publications {
+            release(MavenPublication) {
+                // Publish release, Or components.debug if publishing debug build, or components.java for pure Java/Kotlin libs
+                from components.release
+                groupId = 'com.github.rochdi-wafik' // GitHub username
+                artifactId = 'droidhelpers'         // Module name
+                version = '1.0.4'                  // The version usually matching your Git tag
+
+            }
+        }
+        repositories {
+            maven {
+                name = "GitHubPackages"
+//                url = uri("https://maven.pkg.github.com/${rootProject.ext.gprUser}/${rootProject.name}")
+                url = uri("https://maven.pkg.github.com/rochdi-wafik/droidhelpers")
+                credentials {
+                    username = "xxx"
+                    password = "xxx"
+                }
+            }
+        }
+    }
+}

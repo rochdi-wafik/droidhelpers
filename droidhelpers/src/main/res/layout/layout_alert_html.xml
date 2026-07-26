@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/alertContainer"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@drawable/shape_alert_default"
+    android:baselineAligned="false"
+    android:orientation="horizontal">
+
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="1"
+        android:orientation="vertical"
+        android:padding="9dp">
+
+        <TextView
+            android:id="@+id/txtViewHtml"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="No text now, this is demo No text now, this is demo No text now, this is demo" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/closeBtnContainer"
+        android:layout_width="wrap_content"
+        android:layout_height="match_parent"
+        android:orientation="vertical">
+
+        <ImageButton
+            android:id="@+id/closeBtn"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:adjustViewBounds="true"
+            android:backgroundTint="#00A61B1B"
+            android:contentDescription="TODO"
+            android:src="@drawable/ic_close"
+            app:tint="#515151"
+            tools:ignore="SpeakableTextPresentCheck" />
+    </LinearLayout>
+
+</LinearLayout>

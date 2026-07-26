@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">DroidHelpers</string>
+    <string name="main_subtitle">Tap a box to open live, working usage examples of that droidhelpers package.</string>
+
+</resources>
