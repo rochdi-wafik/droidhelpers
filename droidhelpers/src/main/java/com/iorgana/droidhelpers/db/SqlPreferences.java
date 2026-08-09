@@ -16,9 +16,6 @@ import com.iorgana.droidhelpers.crypto.CryptoUtil;
 import com.iorgana.droidhelpers.utils.Utils;
 import com.orhanobut.logger.Logger;
 
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.io.ObjectInputStream;
 import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.List;
@@ -44,8 +41,18 @@ import java.util.concurrent.atomic.AtomicReference;
  *   background.
  *
  * [Usage]
- * - SqlPreferences.getInstance().putString("key", "value").apply();
- * - String val = SqlPreferences.getInstance().getString("key", "default");
+ * - SqlPreferences.getInstance(context).putString("key", "value").apply();
+ * - String val = SqlPreferences.getInstance(context).getString("key", "default");
+ *
+ * [Do not close the instance]
+ * - This class extends SQLiteOpenHelper, which is Closeable, but the
+ *   instance returned by getInstance() is a shared singleton.
+ * - Do NOT use it inside try-with-resources:
+ *       try (SqlPreferences db = SqlPreferences.getInstance(ctx)) { ... }
+ *   Closing it shuts the database down for every other caller, and may hit
+ *   a background write that is still running.
+ * - Each internal method opens and closes its own database handle already,
+ *   so there is nothing for the caller to release.
  *
  * [Security]
  * - Data is encrypted using AES by default.
@@ -56,7 +63,7 @@ import java.util.concurrent.atomic.AtomicReference;
  * @implNote The library source (including DEFAULT_SECRET_KEY) is public on
  *           GitHub. Always call setSecretKey() with an app-specific key.
  * @author Rochdi Wafik
- * @lastUpdate 25-07-2026
+ * @lastUpdate 08-08-2026
  */
 
 public class SqlPreferences extends SQLiteOpenHelper {
@@ -68,15 +75,22 @@ public class SqlPreferences extends SQLiteOpenHelper {
      * ------------------------------------------------------------------------
      * - IO operations may block the UI thread, so they are executed in the
      *   background. Caching allows this class to be used from the UI thread.
+     * - Single thread on purpose: disk writes and deletes must land in the
+     *   same order the caller issued them. With a multi-thread pool, a fast
+     *   save() followed by remove() could be applied in reverse order.
+     * - Reads are served from the cache, so one writer thread costs nothing.
      */
-    public static final ExecutorService executors = Executors.newFixedThreadPool(4);
+    public static final ExecutorService executors = Executors.newSingleThreadExecutor();
 
     /**
      * Sqlite Database
      * ----------------------------------------------------------------------
+     * - Version 2: data_key became the PRIMARY KEY. Before that there was no
+     *   unique constraint, so CONFLICT_REPLACE had no conflict to act on and
+     *   every apply() appended a new row instead of replacing the old one.
      */
     private static final String DATABASE_NAME = "sql_preferences.db";
-    private static final int DATABASE_VERSION = 1;
+    private static final int DATABASE_VERSION = 2;
     public static String TABLE_NAME = "table_preferences";
 
     /**
@@ -91,17 +105,25 @@ public class SqlPreferences extends SQLiteOpenHelper {
     /**
      * Objects
      * ------------------------------------------------------------------------
-     * - Prefix are important, to detect is is object or list of objects
-     * - Without prefix, if we save object then we save list of the same object
-     *   Then the list object will replace the saved object.
+     * - Prefixes are what separate a saved object from a saved list.
+     * - Without them, if we save an object then save a list of the same
+     *   object under the same key, the list would replace the object.
      * - Example:
      * $ User user = getUser()
      * $ List<User> users = getUsers();
      * $ save(user);
      * $ save(users);
-     * -> Without prefixes, when we save users, we override/replace saved user.
-     * -> With prefixes, both user and users will be saved without lost
+     * -> Without prefixes, saving users overrides the saved user.
+     * -> With prefixes, both are stored side by side.
      *
+     * - The class name is NOT part of the key. Two reasons:
+     *   1. The prefixes alone already separate object from list, which is
+     *      the only thing the class name was there for.
+     *   2. Class.getName() returns the obfuscated name under R8. That name
+     *      changes between builds, so any key built from it stops matching
+     *      after the host app ships a new release.
+     * - PREFIX_LIST_LEGACY_* below documents the old layout, kept only so
+     *   getListObject() can migrate rows written by older versions.
      */
     private static final String PREFIX_OBJ = "pref_obj_";
     private static final String PREFIX_LIST = "pref_list_obj_";
@@ -164,6 +186,7 @@ public class SqlPreferences extends SQLiteOpenHelper {
      *
      * @param context Any valid context (will be safely converted to ApplicationContext)
      * @return The singleton SqlPreferences instance
+     * @apiNote Do not close the returned instance. See the class header.
      */
     public static SqlPreferences getInstance(Context context) {
         return getInstance(context, null);
@@ -246,13 +269,16 @@ public class SqlPreferences extends SQLiteOpenHelper {
      * ************************************************************************
      * - Called when the database is created for the first time.
      * - Creates the preferences table.
+     * - COLUMN_KEY is the PRIMARY KEY, which is what makes CONFLICT_REPLACE
+     *   in insertMap() actually replace an existing row instead of adding a
+     *   duplicate one.
      * ------------------------------------------------------------------------
      * @param db The SQLite database.
      */
     @Override
     public void onCreate(SQLiteDatabase db) {
         String query = "CREATE TABLE IF NOT EXISTS "+TABLE_NAME+" ("
-                + COLUMN_KEY +" TEXT, " // identifier
+                + COLUMN_KEY +" TEXT PRIMARY KEY, " // identifier
                 + COLUMN_DATA_TYPE +" TEXT, " // String, Integer, etc
                 + COLUMN_DATA_VALUE + " TEXT)";
 
@@ -266,7 +292,15 @@ public class SqlPreferences extends SQLiteOpenHelper {
      * onUpgrade()
      * ************************************************************************
      * - Called when the database version is increased.
-     * - Drops the existing table and recreates it.
+     * - Copies the existing rows into a table that has COLUMN_KEY as PRIMARY
+     *   KEY, then swaps it in.
+     * - Dropping the table here instead would delete everything the host app
+     *   had saved, on every device, the moment it picks up a new version of
+     *   this library.
+     * - INSERT OR REPLACE collapses the duplicate rows left behind by
+     *   version 1, where the missing unique constraint made every apply()
+     *   append instead of replace. The last row wins, which matches what
+     *   getAll() already returned.
      * ------------------------------------------------------------------------
      * @param db         The SQLite database.
      * @param oldVersion The old database version.
@@ -274,9 +308,24 @@ public class SqlPreferences extends SQLiteOpenHelper {
      */
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
-        db.execSQL("DROP TABLE IF EXISTS "+TABLE_NAME);
-        onCreate(db);
-        // Logger.i(TAG + " onUpgrade(): $Sql DB has been upgraded");
+        if (oldVersion < 2) {
+            String tempTable = TABLE_NAME + "_v2";
+
+            db.execSQL("DROP TABLE IF EXISTS " + tempTable);
+            db.execSQL("CREATE TABLE " + tempTable + " ("
+                    + COLUMN_KEY + " TEXT PRIMARY KEY, "
+                    + COLUMN_DATA_TYPE + " TEXT, "
+                    + COLUMN_DATA_VALUE + " TEXT)");
+
+            db.execSQL("INSERT OR REPLACE INTO " + tempTable
+                    + " (" + COLUMN_KEY + ", " + COLUMN_DATA_TYPE + ", " + COLUMN_DATA_VALUE + ") "
+                    + "SELECT " + COLUMN_KEY + ", " + COLUMN_DATA_TYPE + ", " + COLUMN_DATA_VALUE
+                    + " FROM " + TABLE_NAME);
+
+            db.execSQL("DROP TABLE " + TABLE_NAME);
+            db.execSQL("ALTER TABLE " + tempTable + " RENAME TO " + TABLE_NAME);
+            // Logger.i(TAG + " onUpgrade(): migrated to primary key layout");
+        }
     }
 
     /**
@@ -543,7 +592,7 @@ public class SqlPreferences extends SQLiteOpenHelper {
     public  <T> SqlPreferences putObject(String key, T object){
 
         // Create DB Key
-        String OBJ_KEY = PREFIX_OBJ+/*object.getClass().getName()+*/key;
+        String OBJ_KEY = objectKey(key);
 
         // Serialize object to String
         Gson gson = new Gson();
@@ -561,26 +610,31 @@ public class SqlPreferences extends SQLiteOpenHelper {
      * putListObject()
      * ************************************************************************
      * - Store a list of objects. Call apply() to persist.
+     * - The key no longer includes the element class name, so the list is
+     *   found again by getListObject() and removeListObject() using nothing
+     *   but the key the caller passed.
      * ------------------------------------------------------------------------
      * @param key        The identifier key.
      * @param listObject The list of objects to serialize and save.
      * @return This SqlPreferences instance for chaining.
+     * @apiNote Saving two different list types under the same key is no
+     *          longer possible: the second call replaces the first, the same
+     *          way putString() replaces a previous string.
      */
     public <T> SqlPreferences putListObject(String key, List<T> listObject){
-        // todo: if listObject is null or empty, then get(0) will throw indexOutOfBounds
-        if(listObject==null || listObject.isEmpty()) {
-            Logger.e(TAG+" putListObject(): null or empty list");
+        if(listObject==null) {
+            Logger.e(TAG+" putListObject(): null list");
             return this;
         }
+
         // Create DB Key
-        Class<?> className = listObject.get(0).getClass();
-        String LIST_OBJ_KEY = PREFIX_LIST+ className.getName()+key;
+        String LIST_OBJ_KEY = listKey(key);
 
         // Serialize Object to String
         Gson gson = new Gson();
         String jsonObj = gson.toJson(listObject);
 
-        // Logger.i(TAG + " putListObject(): "+listObject.get(0).getClass().getSimpleName()+" | data = "+jsonObj);
+        // Logger.i(TAG + " putListObject(): size = "+listObject.size()+" | data = "+jsonObj);
 
         // Save serialized object
         tempMap.put(LIST_OBJ_KEY, jsonObj);
@@ -616,13 +670,14 @@ public class SqlPreferences extends SQLiteOpenHelper {
 
 
     /**
-     * ---------------------------------------------------------------------------------
-     *   Get String
-     * ---------------------------------------------------------------------------------
-     * @Note Example: String name = getString("author", "not set");
-     * @param key identifier
-     * @param defaultValue if key not saved/exists
-     * @return result
+     * ************************************************************************
+     * getInt()
+     * ************************************************************************
+     * - Retrieve an integer value by key.
+     * ------------------------------------------------------------------------
+     * @param key          The identifier key.
+     * @param defaultValue The default value if not found.
+     * @return The stored integer, or defaultValue if not found.
      */
     public Integer getInt(String key, Integer defaultValue) {
         if(cache.containsKey(key)){
@@ -635,13 +690,14 @@ public class SqlPreferences extends SQLiteOpenHelper {
     }
 
     /**
-     * ---------------------------------------------------------------------------------
-     *   Get String
-     * ---------------------------------------------------------------------------------
-     * @Note Example: String name = getString("author", "not set");
-     * @param key identifier
-     * @param defaultValue if key not saved/exists
-     * @return result
+     * ************************************************************************
+     * getBoolean()
+     * ************************************************************************
+     * - Retrieve a boolean value by key.
+     * ------------------------------------------------------------------------
+     * @param key          The identifier key.
+     * @param defaultValue The default value if not found.
+     * @return The stored boolean, or defaultValue if not found.
      */
     public Boolean getBoolean(String key, Boolean defaultValue) {
         if(cache.containsKey(key)){
@@ -675,13 +731,13 @@ public class SqlPreferences extends SQLiteOpenHelper {
 
     /**
      * ************************************************************************
-     * getInt()
+     * getLong()
      * ************************************************************************
-     * - Retrieve an integer value by key.
+     * - Retrieve a long value by key.
      * ------------------------------------------------------------------------
      * @param key          The identifier key.
      * @param defaultValue The default value if not found.
-     * @return The stored integer, or defaultValue if not found.
+     * @return The stored long, or defaultValue if not found.
      */
     public Long getLong(String key, Long defaultValue) {
         if(cache.containsKey(key)){
@@ -705,16 +761,10 @@ public class SqlPreferences extends SQLiteOpenHelper {
      */
     public <T> @Nullable T getObject(String key, Class<T> classType){
         // Create DB Key
-        String OBJ_KEY = PREFIX_OBJ+key;
+        String OBJ_KEY = objectKey(key);
 
         // Retrieve the serialized object from cache
-        String serialized = null;
-        if(cache.containsKey(OBJ_KEY)){
-            Object item = cache.get(OBJ_KEY);
-            if(item instanceof String){
-                serialized = (String) item;
-            }
-        }
+        String serialized = readSerialized(OBJ_KEY);
 
         // Check if object found
         if(serialized==null) {
@@ -732,40 +782,52 @@ public class SqlPreferences extends SQLiteOpenHelper {
 
     /**
      * ************************************************************************
-     * getObject()
+     * getListObject()
      * ************************************************************************
-     * - Retrieve a deserialized object by key.
+     * - Retrieve a deserialized list of objects by key.
+     * - classType is still required, because Gson needs the element type to
+     *   rebuild List<T>. It is no longer part of the storage key.
+     * - If nothing is found under the current key, this looks once under the
+     *   pre-migration key (prefix + class name + key), moves the value over,
+     *   and drops the old row. Data saved by older versions of the library
+     *   keeps working without the caller doing anything.
      * ------------------------------------------------------------------------
      * @param key       The identifier key.
-     * @param classType The class to deserialize to.
-     * @return The deserialized object, or null if not found.
+     * @param classType The element class to deserialize to.
+     * @return The deserialized list, or null if not found.
      */
     public <T> @Nullable List<T> getListObject(String key, Class<T> classType){
 
         // Create DB Key
-        String LIST_OBJ_KEY = PREFIX_LIST+ classType.getName()+key;
+        String LIST_OBJ_KEY = listKey(key);
 
-        // Retrieve the serialized object from cache
-        String serialized = null;
-        if(cache.containsKey(LIST_OBJ_KEY)){
-            Object item = cache.get(LIST_OBJ_KEY);
-            if(item instanceof String){
-                serialized = (String) item;
+        // Retrieve the serialized list from cache
+        String serialized = readSerialized(LIST_OBJ_KEY);
+
+        // Not found: look for a value written by an older version
+        if(serialized==null){
+            String legacyKey = legacyListKey(key, classType);
+            serialized = readSerialized(legacyKey);
+            if(serialized!=null){
+                // Logger.i(TAG + " getListObject(): migrating legacy key "+legacyKey);
+                tempMap.put(LIST_OBJ_KEY, serialized);
+                apply();
+                remove(legacyKey);
             }
         }
 
-        // Check if object found
+        // Check if list found
         if(serialized==null) {
             // Logger.i(TAG + " getListObject(): List Object "+key+" is not found!");
             return null;
         }
 
-        // Deserialize the object to its original type
+        // Deserialize the list to its original type
         // Logger.i(TAG + " getListObject(): "+classType.getSimpleName()+" | data = "+serialized);
         Gson gson = new Gson();
         Type type = TypeToken.getParameterized(List.class, classType).getType();
 
-        // Deserialize String to Object
+        // Deserialize String to List
         return gson.fromJson(serialized, type);
     }
 
@@ -805,10 +867,8 @@ public class SqlPreferences extends SQLiteOpenHelper {
      * @param key The object identifier key.
      */
     public void removeObject(String key){
-        // Create Object Key
-        String OBJ_KEY = PREFIX_OBJ+key;
-        // Remove the object by key
-        remove(OBJ_KEY);
+        // Remove the object by its prefixed key
+        remove(objectKey(key));
     }
 
     /**
@@ -816,20 +876,86 @@ public class SqlPreferences extends SQLiteOpenHelper {
      * removeListObject()
      * ************************************************************************
      * - Remove a saved list of objects by key (adds PREFIX_LIST internally).
+     * - This now builds the same key that putListObject() writes, which it
+     *   did not do before: it used to skip the class name that put and get
+     *   both included, so the delete matched no row and the data stayed.
      * ------------------------------------------------------------------------
      * @param key The list identifier key.
+     * @apiNote A list written by an older version of the library sits under a
+     *          key that includes the element class name. Use
+     *          removeListObject(String, Class) to clear that one too, or call
+     *          getListObject() first, which migrates it.
      */
     public void removeListObject(String key){
-        // Create Object Key
-        String OBJ_KEY = PREFIX_LIST+key;
-        // Remove the object by key
-        remove(OBJ_KEY);
+        // Remove the list by its prefixed key
+        remove(listKey(key));
     }
 
 
 
 
+
     /*==========================[ PRIVATE ]==========================*/
+
+    /**
+     * ************************************************************************
+     * objectKey() (Private)
+     * ************************************************************************
+     * - Build the storage key for a single object.
+     * - One place builds it, so put, get and remove cannot drift apart.
+     * ------------------------------------------------------------------------
+     * @param key The identifier key passed by the caller.
+     * @return The prefixed storage key.
+     */
+    private static String objectKey(String key){
+        return PREFIX_OBJ + key;
+    }
+
+    /**
+     * ************************************************************************
+     * listKey() (Private)
+     * ************************************************************************
+     * - Build the storage key for a list of objects.
+     * - One place builds it, so put, get and remove cannot drift apart.
+     * ------------------------------------------------------------------------
+     * @param key The identifier key passed by the caller.
+     * @return The prefixed storage key.
+     */
+    private static String listKey(String key){
+        return PREFIX_LIST + key;
+    }
+
+    /**
+     * ************************************************************************
+     * legacyListKey() (Private)
+     * ************************************************************************
+     * - Rebuild the list key used before the class name was dropped.
+     * - Only for reading and cleaning up old rows. Nothing writes this key.
+     * - Remove this method, and its two call sites, once enough time has
+     *   passed for installed apps to have read their lists back at least
+     *   once.
+     * ------------------------------------------------------------------------
+     * @param key       The identifier key passed by the caller.
+     * @param classType The element class.
+     * @return The old storage key.
+     */
+    private static String legacyListKey(String key, Class<?> classType){
+        return PREFIX_LIST + classType.getName() + key;
+    }
+
+    /**
+     * ************************************************************************
+     * readSerialized() (Private)
+     * ************************************************************************
+     * - Read a serialized JSON string out of the cache.
+     * ------------------------------------------------------------------------
+     * @param storageKey The full prefixed key.
+     * @return The stored JSON string, or null if absent or not a string.
+     */
+    private @Nullable String readSerialized(String storageKey){
+        Object item = cache.get(storageKey);
+        return (item instanceof String) ? (String) item : null;
+    }
 
     /**
      * ************************************************************************
@@ -865,7 +991,9 @@ public class SqlPreferences extends SQLiteOpenHelper {
                         String original_val = String.valueOf(data.getValue());
                         String final_val = (ENABLE_ENCRYPTION) ? CryptoUtil.cipherEncrypt(original_val, SECRET_KEY) : original_val;
                         cv.put(COLUMN_DATA_VALUE, final_val);
-                        // Add to Database
+                        // Add to Database.
+                        // CONFLICT_REPLACE relies on COLUMN_KEY being the primary key,
+                        // see onCreate().
                         //// Logger.d(TAG + " insertMap(): Insert map: " + cv.toString());
                         db.insertWithOnConflict(TABLE_NAME, null, cv, SQLiteDatabase.CONFLICT_REPLACE);
                         cv.clear();
@@ -940,23 +1068,6 @@ public class SqlPreferences extends SQLiteOpenHelper {
             return dataSet;
         }
 
-    }
-
-
-
-    /*==============================[Test Only]==============================*/
-    /**
-     * deserialize() (Private Helper)
-     * - Deserialize a string to a serializable object (test only).
-     */
-    private @Nullable Object deserialize(String serialized) {
-        try {
-            ByteArrayInputStream bais = new ByteArrayInputStream(serialized.getBytes());
-            ObjectInputStream ois = new ObjectInputStream(bais);
-            return ois.readObject();
-        } catch (IOException | ClassNotFoundException e) {
-            return null;
-        }
     }
 
 

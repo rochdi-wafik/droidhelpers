@@ -6,14 +6,14 @@
 
 ## ✨ Features
 
-- ✅ Easy-to-use and modular helper classes
-- ✅ Works across most Android API levels
-- ✅ Reduces boilerplate code
-- ✅ Lightweight and dependency-free (where possible)
+- Easy-to-use and modular helper classes
+- Works across most Android API levels
+- Reduces boilerplate code
+- Lightweight and dependency-free (where possible)
 
 ---
 
-## 🧰 Included Helpers
+## Included Helpers
 
 ### 🔔 UI Alerts
 
