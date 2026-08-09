@@ -83,7 +83,7 @@ afterEvaluate {
                 from components.release
                 groupId = 'com.github.rochdi-wafik' // GitHub username
                 artifactId = 'droidhelpers'         // Module name
-                version = '1.0.4'                  // The version usually matching your Git tag
+                version = '1.0.5'                  // The version usually matching your Git tag
 
             }
         }
