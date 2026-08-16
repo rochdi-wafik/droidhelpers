@@ -5,7 +5,9 @@ import android.view.View;
 
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsCompat;
+import androidx.core.view.WindowInsetsControllerCompat;
 
 /**
  * *****************************************************************************
@@ -161,7 +163,7 @@ public final class EdgeToEdgeUtils {
     // XML design padding is kept, not overwritten. consume stops the insets here
     // when the caller has padded every edge (see applyBarInsets).
     private static void applyPadding(View view, int typeMask,
-            boolean useTop, boolean useBottom, boolean useSides, boolean consume) {
+                                     boolean useTop, boolean useBottom, boolean useSides, boolean consume) {
         final int pl = view.getPaddingLeft();
         final int pt = view.getPaddingTop();
         final int pr = view.getPaddingRight();
