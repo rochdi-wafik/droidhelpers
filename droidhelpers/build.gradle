@@ -47,7 +47,7 @@ dependencies {
     implementation 'com.google.code.gson:gson:2.14.0'
 
     // OkHttp ------------------------------------------------------------
-    // -> require sdk37
+    // -> v5.4.+ require sdk37
     implementation(platform("com.squareup.okhttp3:okhttp-bom:5.4.0"))
     implementation("com.squareup.okhttp3:okhttp")
     implementation("com.squareup.okhttp3:logging-interceptor")
@@ -84,7 +84,7 @@ afterEvaluate {
                 from components.release
                 groupId = 'com.github.rochdi-wafik' // GitHub username
                 artifactId = 'droidhelpers'         // Module name
-                version = '1.0.8'                  // The version usually matching your Git tag
+                version = '1.0.9'                  // The version usually matching your Git tag
 
             }
         }
