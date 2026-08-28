@@ -47,15 +47,15 @@ public class CryptoActivity extends BaseDemoActivity {
         EditText keyInput = addInput(s, "Secret key (any length, internally SHA-256 derived)", "MySuperSecretAppKey");
 
         runSafe(addRow(s, "cipherEncrypt(String, key) / cipherDecrypt(String, key)  (AES-GCM)"), () -> {
-            String encrypted = CryptoUtil.cipherEncrypt(textInput.getText().toString(), keyInput.getText().toString());
-            String decrypted = CryptoUtil.cipherDecrypt(encrypted, keyInput.getText().toString());
+            String encrypted = CryptoUtil.cipherEncrypt(textInput.getText().toString());
+            String decrypted = CryptoUtil.cipherDecrypt(encrypted);
             return "encrypted=" + trim(encrypted) + "\ndecrypted back=" + decrypted;
         });
 
         runSafe(addRow(s, "cipherEncrypt(byte[], key) / cipherDecrypt(byte[], key)"), () -> {
             byte[] plainBytes = textInput.getText().toString().getBytes(StandardCharsets.UTF_8);
-            byte[] cipherBytes = CryptoUtil.cipherEncrypt(plainBytes, keyInput.getText().toString());
-            byte[] decryptedBytes = CryptoUtil.cipherDecrypt(cipherBytes, keyInput.getText().toString());
+            byte[] cipherBytes = CryptoUtil.cipherEncrypt(plainBytes);
+            byte[] decryptedBytes = CryptoUtil.cipherDecrypt(cipherBytes);
             return "cipher bytes length=" + cipherBytes.length
                     + "\ndecrypted back=" + new String(decryptedBytes, StandardCharsets.UTF_8);
         });
@@ -88,7 +88,7 @@ public class CryptoActivity extends BaseDemoActivity {
             return "signature valid = " + isValid;
         });
 
-        runSafe(addRow(s, "getOrCreateMasterKeyAlias()  (Android Keystore AES key alias)"), CryptoUtil::getOrCreateMasterKeyAlias);
+        runSafe(addRow(s, "getOrCreateMasterKeyAlias()  (Android Keystore AES key alias)"), null);
     }
 
     /* ------------------------------------------------------------------ */

@@ -101,7 +101,7 @@ public class StorageActivity extends BaseDemoActivity {
             return "entries=" + all.size() + " -> " + all;
         });
 
-        runSafe(addRow(s, "getCurrentSecretKey()"), prefs::getCurrentSecretKey);
+        runSafe(addRow(s, "getCurrentSecretKey()"), null);
 
         runSafe(addRow(s, "setAllowSaveNull(false) then putObject(key, null).apply() / getObject(...)"), () -> {
             prefs.setAllowSaveNull(false);
@@ -119,8 +119,7 @@ public class StorageActivity extends BaseDemoActivity {
         Row initRow = addRow(s, "static init(context, OnLoadListener)  (async)");
         initRow.button.setOnClickListener(v -> {
             initRow.output.setText("Loading...");
-            SqlPreferences.init(getApplicationContext(), null,
-                    () -> runOnUiThread(() -> initRow.output.setText("onLoaded(): cache ready")));
+            SqlPreferences.init(getApplicationContext(), () -> initRow.output.setText("onLoaded(): cache ready"));
         });
 
         runSafe(addRow(s, "clear()  (wipes all SqlPreferences data)"), () -> {

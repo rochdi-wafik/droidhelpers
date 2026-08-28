@@ -97,9 +97,3 @@ implementation project(":droidhelpers")
 
 ## Developer Guide
 - Visit [DeveloperGuide.MD](/droidhelpers/docs/Developer_Guide.MD)
-
---- 
-
-## 📄 License
-MIT License - feel free to use, modify, and distribute with attribution.
-

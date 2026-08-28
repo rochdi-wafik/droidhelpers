@@ -6,6 +6,7 @@ import androidx.annotation.Nullable;
 
 import com.iorgana.droidhelpers.utils.JPatterns;
 
+import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.util.Collections;
@@ -71,6 +72,33 @@ public class AddressHelper {
         return "";
     }
 
+    /**
+     * ********************************************************************
+     * Get AP IP Address
+     * ********************************************************************
+     * - The hotspot IP is site-local, which is: 192.168.x, OR 10.x
+     * - It's static fixed (not changeable)
+     * - droidhelpers: AddressHelper.getIPAddress() has some limits,
+     *   it returns the first non-loopback IPv4 it finds, which can be
+     *   site-local (old androids) or CGNAT Mobile IP (ISP,Dynamic) in new androids
+     * @return Local IP Address
+     */
+    public static String getHotspotAddress() {
+        try {
+            for (NetworkInterface iface : Collections.list(NetworkInterface.getNetworkInterfaces())) {
+                if (iface.isLoopback() || !iface.isUp()) continue;
+                for (InetAddress addr : Collections.list(iface.getInetAddresses())) {
+                    // CGNAT mobile IP (100.64.0.0/10) is not site-local, so it is skipped here.
+                    if (addr instanceof Inet4Address && addr.isSiteLocalAddress()) {
+                        return addr.getHostAddress();
+                    }
+                }
+            }
+        } catch (SocketException ignored) {
+        }
+        // Fallback to droidhelper: getIPAddress()
+        return AddressHelper.getIPAddress(false);
+    }
 
 
     /**

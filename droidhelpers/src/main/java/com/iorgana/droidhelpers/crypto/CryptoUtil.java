@@ -7,25 +7,18 @@ import android.util.Log;
 
 import com.orhanobut.logger.Logger;
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
-
-import javax.crypto.Cipher;
-
-import javax.crypto.KeyGenerator;
-import javax.crypto.spec.GCMParameterSpec;
-import javax.crypto.spec.SecretKeySpec;
-
-import java.security.GeneralSecurityException;
 import java.security.KeyFactory;
 import java.security.KeyStore;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.security.PublicKey;
-import java.security.SecureRandom;
 import java.security.Signature;
 import java.security.spec.X509EncodedKeySpec;
+
+import javax.crypto.Cipher;
+import javax.crypto.KeyGenerator;
+import javax.crypto.SecretKey;
+import javax.crypto.spec.GCMParameterSpec;
 
 
 /**
@@ -33,38 +26,65 @@ import java.security.spec.X509EncodedKeySpec;
  * CryptoUtil
  * ************************************************************************
  * - Methods for encryption, decryption, and cryptographic operations.
+ *
+ * [AES key]
+ * - The AES key lives in the Android Keystore and is fetched by alias.
+ * - There is no string key to pass, mismatch, or leak. Callers that used
+ *   to pass a key no longer do; the key is internal.
+ * - The key is hardware-backed on most devices and non-exportable, so the
+ *   ciphertext is meaningful even on a rooted device.
+ * - The key is per-install. It does not survive a reinstall, and some
+ *   devices drop it on a lock-screen credential change. When that happens
+ *   old rows stop decrypting; callers must treat a failed decrypt as
+ *   absent data, never as a value.
  * ------------------------------------------------------------------------
- * @todo Maybe need to change the class name.
+ * @author Rochdi Wafik
+ * @lastUpdate 28-08-2026
  */
 public class CryptoUtil {
     private static final String TAG = "__StringCrypto";
 
     // Use GCM for Authenticated Encryption (prevents malleability/padding oracles)
     public static final String CIPHER_TRANS = "AES/GCM/NoPadding";
-    public static final String CIPHER_ALGO = "AES";
 
     // GCM standard IV length is 12 bytes (96 bits)
     private static final int GCM_IV_LENGTH = 12;
     // GCM authentication tag length is 16 bytes (128 bits)
     private static final int GCM_TAG_LENGTH = 128;
 
+    // Android Keystore
+    private static final String ANDROID_KEYSTORE = "AndroidKeyStore";
+    // Alias of the AES key used by this library. Changing it orphans existing data.
+    private static final String KEY_ALIAS = "iorgana_droidhelpers_aes_key";
+
     /**
      * ************************************************************************
-     * deriveKey()
+     * getOrCreateKey() (Private)
      * ************************************************************************
-     * - Derive a robust 256-bit AES key from any given string using SHA-256.
+     * - Return the library's AES key from the Android Keystore, creating it
+     *   on first use.
      * ------------------------------------------------------------------------
-     * @param key The input string to derive the key from.
-     * @return A SecretKeySpec for AES encryption.
-     * @throws NoSuchAlgorithmException if SHA-256 is not available.
+     * @return The 256-bit AES key held in the Keystore.
+     * @throws Exception if the Keystore is unavailable or key creation fails.
      */
-    private static SecretKeySpec deriveKey(String key) throws NoSuchAlgorithmException {
-        // Hashing the string ensures we always get a valid 32-byte (256-bit) key,
-        // mitigating the risk of short or poorly-sized passwords.
-        // Note: For true password-based encryption, PBKDF2/HKDF with a stored random salt is preferred.
-        MessageDigest digest = MessageDigest.getInstance("SHA-256");
-        byte[] keyBytes = digest.digest(key.getBytes(StandardCharsets.UTF_8));
-        return new SecretKeySpec(keyBytes, CIPHER_ALGO);
+    private static SecretKey getOrCreateKey() throws Exception {
+        KeyStore keyStore = KeyStore.getInstance(ANDROID_KEYSTORE);
+        keyStore.load(null);
+
+        KeyStore.Entry entry = keyStore.getEntry(KEY_ALIAS, null);
+        if (entry instanceof KeyStore.SecretKeyEntry) {
+            return ((KeyStore.SecretKeyEntry) entry).getSecretKey();
+        }
+
+        KeyGenerator keyGenerator = KeyGenerator.getInstance(
+                KeyProperties.KEY_ALGORITHM_AES, ANDROID_KEYSTORE);
+        keyGenerator.init(new KeyGenParameterSpec.Builder(
+                KEY_ALIAS, KeyProperties.PURPOSE_ENCRYPT | KeyProperties.PURPOSE_DECRYPT)
+                .setBlockModes(KeyProperties.BLOCK_MODE_GCM)
+                .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE)
+                .setKeySize(256)
+                .build());
+        return keyGenerator.generateKey();
     }
 
     /**
@@ -74,30 +94,21 @@ public class CryptoUtil {
      * - Encrypt byte data using AES/GCM/NoPadding.
      * ------------------------------------------------------------------------
      * @param plainBytes Bytes data to be encrypted.
-     * @param key        The encryption key.
-     * @return Byte array containing [IV (12 bytes)] + [Ciphertext].
+     * @return Byte array containing [IV (12 bytes)] + [Ciphertext], or null on failure.
      */
-    public static byte[] cipherEncrypt(byte[] plainBytes, final String key) {
+    public static byte[] cipherEncrypt(byte[] plainBytes) {
         try {
-            SecretKeySpec skeySpec = deriveKey(key);
             Cipher cipher = Cipher.getInstance(CIPHER_TRANS);
-
-            // Generate a random IV for every encryption call (prevents deterministic patterns)
-            byte[] iv = new byte[GCM_IV_LENGTH];
-            SecureRandom random = new SecureRandom();
-            random.nextBytes(iv);
-
-            GCMParameterSpec gcmSpec = new GCMParameterSpec(GCM_TAG_LENGTH, iv);
-            cipher.init(Cipher.ENCRYPT_MODE, skeySpec, gcmSpec);
-
+            // A Keystore GCM key generates its own IV; we read it back rather than supply one.
+            cipher.init(Cipher.ENCRYPT_MODE, getOrCreateKey());
+            byte[] iv = cipher.getIV();
             byte[] cipherText = cipher.doFinal(plainBytes);
 
-            // Prepend the IV to the encrypted data so we can extract it for decryption
-            ByteBuffer byteBuffer = ByteBuffer.allocate(iv.length + cipherText.length);
-            byteBuffer.put(iv);
-            byteBuffer.put(cipherText);
-            return byteBuffer.array();
-
+            // Prepend the IV so decryption can extract it
+            return ByteBuffer.allocate(iv.length + cipherText.length)
+                    .put(iv)
+                    .put(cipherText)
+                    .array();
         } catch (Exception e) {
             Logger.e(TAG + " cipherEncrypt(): unable to encrypt bytes: " + e.getMessage());
             e.printStackTrace();
@@ -112,25 +123,20 @@ public class CryptoUtil {
      * - Decrypt byte data that was encrypted with cipherEncrypt().
      * ------------------------------------------------------------------------
      * @param cipherBytes Byte array containing [IV (12 bytes)] + [Ciphertext].
-     * @param key         Must be the same key used for encryption.
-     * @return Decrypted data.
+     * @return Decrypted data, or null if the input is unreadable.
      */
-    public static byte[] cipherDecrypt(byte[] cipherBytes, final String key) {
+    public static byte[] cipherDecrypt(byte[] cipherBytes) {
         try {
-            if (cipherBytes == null || cipherBytes.length < GCM_IV_LENGTH) {
-                throw new IllegalArgumentException("Invalid cipher bytes: Too short to contain IV");
+            if (cipherBytes == null || cipherBytes.length <= GCM_IV_LENGTH) {
+                return null;
             }
 
-            SecretKeySpec skeySpec = deriveKey(key);
             Cipher cipher = Cipher.getInstance(CIPHER_TRANS);
-
             // Extract the 12-byte IV from the front of the payload
             GCMParameterSpec gcmSpec = new GCMParameterSpec(GCM_TAG_LENGTH, cipherBytes, 0, GCM_IV_LENGTH);
-            cipher.init(Cipher.DECRYPT_MODE, skeySpec, gcmSpec);
+            cipher.init(Cipher.DECRYPT_MODE, getOrCreateKey(), gcmSpec);
 
-            // Decrypt the remaining bytes
             return cipher.doFinal(cipherBytes, GCM_IV_LENGTH, cipherBytes.length - GCM_IV_LENGTH);
-
         } catch (Exception e) {
             Logger.e(TAG + " cipherDecrypt(): unable to decrypt bytes: " + e.getMessage());
             e.printStackTrace();
@@ -145,14 +151,14 @@ public class CryptoUtil {
      * - Encrypt a string using AES/GCM/NoPadding and return Base64.
      * ------------------------------------------------------------------------
      * @param plainText String data to be encrypted.
-     * @param key       The encryption key.
-     * @return Base64 string of the IV + Ciphertext.
+     * @return Base64 string of the IV + Ciphertext, or null on failure.
      */
-    public static String cipherEncrypt(String plainText, final String key) {
+    public static String cipherEncrypt(String plainText) {
+        if (plainText == null) return null;
         try {
-            byte[] aesData = cipherEncrypt(plainText.getBytes(StandardCharsets.UTF_8), key);
+            byte[] aesData = cipherEncrypt(plainText.getBytes(StandardCharsets.UTF_8));
             if (aesData == null) return null;
-            return Base64.encodeToString(aesData, Base64.NO_WRAP | Base64.DEFAULT);
+            return Base64.encodeToString(aesData, Base64.NO_WRAP);
         } catch (Exception e) {
             e.printStackTrace();
             Logger.e(TAG + " cipherEncrypt(): unable to encrypt string, " + e.getMessage());
@@ -167,13 +173,13 @@ public class CryptoUtil {
      * - Decrypt a Base64 string that was encrypted with cipherEncrypt().
      * ------------------------------------------------------------------------
      * @param encryptedText Base64 string containing IV + Ciphertext.
-     * @param key           Must be the same key used for encryption.
-     * @return Decrypted string data.
+     * @return Decrypted string data, or null if the input is unreadable.
      */
-    public static String cipherDecrypt(String encryptedText, final String key) {
+    public static String cipherDecrypt(String encryptedText) {
+        if (encryptedText == null) return null;
         try {
-            byte[] decoded = Base64.decode(encryptedText, Base64.DEFAULT);
-            byte[] aesDecrypted = cipherDecrypt(decoded, key);
+            byte[] decoded = Base64.decode(encryptedText, Base64.NO_WRAP);
+            byte[] aesDecrypted = cipherDecrypt(decoded);
             if (aesDecrypted == null) return null;
             return new String(aesDecrypted, StandardCharsets.UTF_8);
         } catch (Exception e) {
@@ -297,35 +303,5 @@ public class CryptoUtil {
             Logger.e(TAG + " verifyRSASignature(): Exception, " + e.getMessage());
             return false;
         }
-    }
-
-    /**
-     * ************************************************************************
-     * getOrCreateMasterKeyAlias()
-     * ************************************************************************
-     * - Check if a master key alias exists in the Android Keystore.
-     * - If not, create a new AES key with the specified parameters.
-     * ------------------------------------------------------------------------
-     * @return The alias of the master key in the Android Keystore.
-     * @throws GeneralSecurityException If a security error occurs.
-     * @throws IOException              If an I/O error occurs.
-     */
-    public static String getOrCreateMasterKeyAlias() throws GeneralSecurityException, IOException {
-        final String alias = "_androidx_security_master_key_";
-        KeyStore keyStore = KeyStore.getInstance("AndroidKeyStore");
-        keyStore.load(null);
-        if (!keyStore.containsAlias(alias)) {
-            KeyGenParameterSpec spec = new KeyGenParameterSpec.Builder(
-                    alias, KeyProperties.PURPOSE_ENCRYPT | KeyProperties.PURPOSE_DECRYPT)
-                    .setBlockModes(KeyProperties.BLOCK_MODE_GCM)
-                    .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE)
-                    .setKeySize(256)
-                    .build();
-            KeyGenerator keyGenerator = KeyGenerator.getInstance(
-                    KeyProperties.KEY_ALGORITHM_AES, "AndroidKeyStore");
-            keyGenerator.init(spec);
-            keyGenerator.generateKey();
-        }
-        return alias;
     }
 }

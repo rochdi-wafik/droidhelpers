@@ -1,4 +1,5 @@
-# PROJECT_MAP.md
+# Project Structure
+
 > Memory foundation for `droidhelpers` sample/usage app. Read this before touching `app/`.
 
 ## TECH_STACK

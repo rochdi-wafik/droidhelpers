@@ -53,9 +53,7 @@ public class App extends Application {
         setNightMode(false);
 
         // Load To Cache Memory (Sync)
-        // With Custom Secret Key
-        String secretKey = SqlPreferences.DEFAULT_SECRET_KEY;
-        SqlPreferences.getInstance(this, secretKey).initSync();
+        SqlPreferences.getInstance(this).initSync();
 
 
 
